@@ -4,6 +4,6 @@
     <item>
         <bitmap
             android:gravity="center"
-            android:src="@drawable/splash_inout" />
+            android:src="@drawable/splash_dufshub" />
     </item>
 </layer-list>
