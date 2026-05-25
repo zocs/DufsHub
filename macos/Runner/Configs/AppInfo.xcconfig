@@ -8,7 +8,7 @@
 PRODUCT_NAME = inout
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.inout.inoutFlutter
+PRODUCT_BUNDLE_IDENTIFIER = cc.merr.dufshub
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 com.inout. All rights reserved.
