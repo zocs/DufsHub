@@ -3,16 +3,18 @@ Categories:
 
 License: MIT
 AuthorName: zocs
-WebSite: https://github.com/zocs/inout
-SourceCode: https://github.com/zocs/inout
-IssueTracker: https://github.com/zocs/inout/issues
-Changelog: https://github.com/zocs/inout/releases
+WebSite: https://github.com/zocs/dufshub
+SourceCode: https://github.com/zocs/dufshub
+IssueTracker: https://github.com/zocs/dufshub/issues
+Changelog: https://github.com/zocs/dufshub/releases
 
-AutoName: inout
-Summary: One-tap file sharing via browser - one install, everyone uploads & downloads
+AutoName: DufsHub
+Summary: The hub for dufs — one-tap LAN file sharing via browser
 Description: |-
-  inout is a graphical file sharing application that lets you share files
-  from your device to any browser on your local network.
+  DufsHub is a Dufs-based, lightweight cross-platform file distribution
+  GUI optimized for air-gapped LANs and restricted industrial environments.
+  Install it on ONE device, tap start, and anyone on the same network can
+  upload and download files via browser — no app needed on the other side.
 
   Features:
 
@@ -25,7 +27,7 @@ Description: |-
   * Material 3 design
 
 RepoType: git
-Repo: https://github.com/zocs/inout
+Repo: https://github.com/zocs/dufshub
 
 Builds:
   - versionName: 0.3.2
