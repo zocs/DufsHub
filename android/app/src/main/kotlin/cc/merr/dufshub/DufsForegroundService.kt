@@ -1,4 +1,4 @@
-package cc.merr.inout
+package cc.merr.dufshub
 
 import android.app.*
 import android.content.Intent

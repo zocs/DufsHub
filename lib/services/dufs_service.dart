@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import '../constants.dart';
 import '../models/server_config.dart';
 import '../models/transfer_log.dart';
 import 'dufs_ffi.dart';
@@ -16,7 +17,7 @@ import 'dufs_ffi.dart';
 bool get _useFfi => Platform.isLinux || Platform.isMacOS || Platform.isWindows;
 
 class DufsService extends ChangeNotifier {
-  static const _ch = MethodChannel('cc.merr.inout/native');
+  static const _ch = MethodChannel(kMethodChannel);
 
   final DufsFfi _dufsFfi = DufsFfi();
   Process? _process;

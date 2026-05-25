@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "cc.merr.inout"
+    namespace = "cc.merr.dufshub"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -20,7 +20,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "cc.merr.inout"
+        applicationId = "cc.merr.dufshub"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -33,7 +33,7 @@ android {
             if (keystoreFilePath != null) {
                 storeFile = file(keystoreFilePath)
                 storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
-                keyAlias = System.getenv("KEY_ALIAS") ?: "inout"
+                keyAlias = System.getenv("KEY_ALIAS") ?: "dufshub"
                 keyPassword = System.getenv("KEY_PASSWORD") ?: ""
             }
         }

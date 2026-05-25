@@ -1,4 +1,4 @@
-package cc.merr.inout
+package cc.merr.dufshub
 
 import android.Manifest
 import android.content.Intent
@@ -15,7 +15,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "cc.merr.inout/native"
+    private val CHANNEL = "cc.merr.dufshub/native"
     private val STORAGE_PERMISSION_CODE = 1001
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {

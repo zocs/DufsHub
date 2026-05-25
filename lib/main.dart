@@ -42,20 +42,20 @@ void main() async {
   runApp(
     ChangeNotifierProvider(
       create: (_) => DufsService(),
-      child: InoutApp(config: config),
+      child: DufsHubApp(config: config),
     ),
   );
 }
 
-class InoutApp extends StatefulWidget {
+class DufsHubApp extends StatefulWidget {
   final ServerConfig config;
-  const InoutApp({super.key, required this.config});
+  const DufsHubApp({super.key, required this.config});
 
   @override
-  State<InoutApp> createState() => _InoutAppState();
+  State<DufsHubApp> createState() => _DufsHubAppState();
 }
 
-class _InoutAppState extends State<InoutApp> with TrayListener, WindowListener {
+class _DufsHubAppState extends State<DufsHubApp> with TrayListener, WindowListener {
   late ThemeMode _themeMode;
   late String _colorScheme;
   late String _language;

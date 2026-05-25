@@ -7,6 +7,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:desktop_drop/desktop_drop.dart';
+import '../constants.dart';
 import '../l10n/app_localizations.dart';
 import '../models/server_config.dart';
 import '../services/dufs_service.dart';
@@ -48,7 +49,7 @@ class _HomePageState extends State<HomePage>
   bool _isDragOver = false;
   bool _isServerTransitioning = false;
   bool _isStoppingServer = false;
-  static const _ch = MethodChannel('cc.merr.inout/native');
+  static const _ch = MethodChannel(kMethodChannel);
 
   AppLocalizations get l10n => AppLocalizations(_config.language);
 

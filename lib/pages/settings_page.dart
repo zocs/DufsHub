@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../constants.dart';
 import '../l10n/app_localizations.dart';
 import '../models/server_config.dart';
 import '../app.dart' show presetColors, appVersion;
@@ -30,7 +31,7 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   AppLocalizations get l10n => AppLocalizations(widget.config.language);
 
-  static const _ch = MethodChannel('cc.merr.inout/native');
+  static const _ch = MethodChannel(kMethodChannel);
   // Cache permission state across page rebuilds
   bool? _cachedStorageGranted;
 

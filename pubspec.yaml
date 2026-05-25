@@ -1,5 +1,5 @@
-name: inout
-description: "inout - 轻点一下，文件分享即刻在线。基于 dufs 的图形界面版本。"
+name: dufs_hub
+description: "DufsHub - dufs 的多端中枢。轻点一下，文件分享即刻在线。"
 version: 0.3.4+34
 license: MIT
 # The following line prevents the package from being accidentally published to
