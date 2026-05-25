@@ -30,7 +30,7 @@ if [ ! -d "$DUFS_SRC" ]; then
   git clone --depth 1 --branch "$DUFS_VERSION" "$DUFS_REPO" "$DUFS_SRC"
 fi
 
-# Apply inout's FFI modifications (lib.rs + Cargo.toml [lib] section)
+# Apply DufsHub's FFI modifications (lib.rs + Cargo.toml [lib] section)
 DUFS_FFI_DIR="${SCRIPT_DIR}/dufs-ffi"
 if [ -d "$DUFS_FFI_DIR" ]; then
   echo "Applying FFI modifications..."

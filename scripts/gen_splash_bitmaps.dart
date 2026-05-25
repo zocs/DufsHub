@@ -11,7 +11,7 @@ import 'dart:typed_data';
 // Each letter is 8 rows; each row is 8 bits with MSB = leftmost pixel.
 // Capitals (D, H) span rows 1-6; lowercase ascenders (f, b) span rows 0-6;
 // short lowercase (u, s) span rows 2-6 — same vertical metrics as the
-// original "inout" font for visual consistency.
+// original "inout" 5-letter font for visual consistency.
 const _D = [0x00, 0x7C, 0x66, 0x66, 0x66, 0x66, 0x7C, 0x00];
 const _u = [0x00, 0x00, 0x66, 0x66, 0x66, 0x66, 0x3C, 0x00];
 const _f = [0x3C, 0x30, 0x7C, 0x30, 0x30, 0x30, 0x30, 0x00];
