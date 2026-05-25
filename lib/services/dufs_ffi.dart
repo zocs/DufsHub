@@ -82,7 +82,7 @@ Future<String> resolveDufsLibPath() async {
       final stat = await sourceFile.stat();
       final tmpLib = p.join(
         Directory.systemTemp.path,
-        'inout-libdufs-${stat.modified.millisecondsSinceEpoch}-$pid.so',
+        'dufshub-libdufs-${stat.modified.millisecondsSinceEpoch}-$pid.so',
       );
       final tmpFile = File(tmpLib);
       if (!await tmpFile.exists()) {

@@ -116,7 +116,7 @@ class DufsService extends ChangeNotifier {
   ///
   /// Strategy:
   ///   1. Try the requested port. If free, use it.
-  ///   2. If busy, try to identify and stop a leftover dufs/inout process
+  ///   2. If busy, try to identify and stop a leftover dufs process
   ///      that is holding it (same user only). Re-probe.
   ///   3. If still busy, scan +1, +2, ... up to +9. Return the first free.
   ///   4. None free in range → throw.
@@ -245,7 +245,7 @@ class DufsService extends ChangeNotifier {
 
   Future<void> _prepareLogFile() async {
     final tmpDir = await getTemporaryDirectory();
-    _logFilePath = '${tmpDir.path}/inout_dufs.log';
+    _logFilePath = '${tmpDir.path}/dufshub_dufs.log';
     try {
       await File(_logFilePath!).writeAsString('');
     } catch (_) {}

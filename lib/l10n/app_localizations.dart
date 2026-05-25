@@ -9,8 +9,8 @@ class AppLocalizations {
 
   static const Map<String, Map<String, String>> _translations = {
     'zh': {
-      'app.name': 'inout',
-      'app.slogan': '轻点一下，文件分享即刻在线。',
+      'app.name': 'DufsHub',
+      'app.slogan': 'dufs 的多端中枢。',
       'nav.home': '首页',
       'nav.settings': '设置',
       'home.selectDir': '选择分享目录',
@@ -93,7 +93,7 @@ class AppLocalizations {
       'about.privacy': '隐私政策',
       'about.license': '开源许可',
       'privacy.content':
-          'inout 不收集、存储或传输任何个人数据到外部服务器。\n\n文件分享通过本地网络直接在设备之间进行，所有数据传输发生在局域网（LAN）或您自行配置的网络环境中。\n\n本应用使用以下权限：\n• 存储/文件：用于选择和分享设备上的目录\n• 网络：用于运行本地 HTTP 文件服务器\n• 网络状态：用于检测本机 IP 地址生成二维码\n\n本应用不使用任何第三方分析、广告或追踪服务。\n\n联系方式：zocs@live.com',
+          'DufsHub 不收集、存储或传输任何个人数据到外部服务器。\n\n文件分享通过本地网络直接在设备之间进行，所有数据传输发生在局域网（LAN）或您自行配置的网络环境中。\n\n本应用使用以下权限：\n• 存储/文件：用于选择和分享设备上的目录\n• 网络：用于运行本地 HTTP 文件服务器\n• 网络状态：用于检测本机 IP 地址生成二维码\n\n本应用不使用任何第三方分析、广告或追踪服务。\n\n联系方式：zocs@live.com',
       'help.step1': '点击「选目录」或「选文件」，选好你想分享的内容',
       'help.step2': '按下「启动服务」，等待绿色指示灯亮起',
       'help.step3': '用手机或其他设备扫描二维码，即可上传和下载文件',
@@ -102,8 +102,8 @@ class AppLocalizations {
       'help.tip2': '建议锁定 App 后台和调整省电策略为无限制，以保证传输稳定。',
     },
     'en': {
-      'app.name': 'inout',
-      'app.slogan': 'Files in and out, that\'s all.',
+      'app.name': 'DufsHub',
+      'app.slogan': 'The hub for dufs.',
       'nav.home': 'Home',
       'nav.settings': 'Settings',
       'home.selectDir': 'Select Share Directory',
@@ -194,7 +194,7 @@ class AppLocalizations {
       'about.privacy': 'Privacy Policy',
       'about.license': 'Licenses',
       'privacy.content':
-          'inout does NOT collect, store, or transmit any personal data to external servers.\n\nFile sharing happens directly between devices on your local network. All data transfer occurs within your LAN or your own network setup.\n\nPermissions used:\n• Storage/Files: To select and share directories\n• Internet/Network: To run the local HTTP file server\n• Network State: To detect local IP for QR code generation\n\nNo third-party analytics, advertising, or tracking services are used.\n\nContact: zocs@live.com',
+          'DufsHub does NOT collect, store, or transmit any personal data to external servers.\n\nFile sharing happens directly between devices on your local network. All data transfer occurs within your LAN or your own network setup.\n\nPermissions used:\n• Storage/Files: To select and share directories\n• Internet/Network: To run the local HTTP file server\n• Network State: To detect local IP for QR code generation\n\nNo third-party analytics, advertising, or tracking services are used.\n\nContact: zocs@live.com',
       'help.step1': 'Tap "Folder" or "File" and choose what you want to share',
       'help.step2': 'Press "Start Server" and wait for the green indicator',
       'help.step3':
@@ -205,8 +205,8 @@ class AppLocalizations {
           'Consider pinning the app to background and setting battery optimization to unrestricted for stable transfers.',
     },
     'zhTW': {
-      'app.name': 'inout',
-      'app.slogan': '輕點一下，檔案分享即刻在線。',
+      'app.name': 'DufsHub',
+      'app.slogan': 'dufs 的多端中樞。',
       'nav.home': '首頁',
       'nav.settings': '設定',
       'home.selectDir': '選擇分享目錄',
@@ -289,7 +289,7 @@ class AppLocalizations {
       'about.privacy': '隱私權政策',
       'about.license': '開源許可',
       'privacy.content':
-          'inout 不收集、儲存或傳輸任何個人資料到外部伺服器。\n\n檔案分享透過本地網路直接在裝置之間進行，所有資料傳輸發生在區域網路（LAN）或您自行設定的網路環境中。\n\n本應用程式使用以下權限：\n• 儲存/檔案：用於選擇和分享裝置上的目錄\n• 網路：用於執行本地 HTTP 檔案伺服器\n• 網路狀態：用於偵測本機 IP 位址產生 QR 碼\n\n本應用程式不使用任何第三方分析、廣告或追蹤服務。\n\n聯絡方式：zocs@live.com',
+          'DufsHub 不收集、儲存或傳輸任何個人資料到外部伺服器。\n\n檔案分享透過本地網路直接在裝置之間進行，所有資料傳輸發生在區域網路（LAN）或您自行設定的網路環境中。\n\n本應用程式使用以下權限：\n• 儲存/檔案：用於選擇和分享裝置上的目錄\n• 網路：用於執行本地 HTTP 檔案伺服器\n• 網路狀態：用於偵測本機 IP 位址產生 QR 碼\n\n本應用程式不使用任何第三方分析、廣告或追蹤服務。\n\n聯絡方式：zocs@live.com',
       'help.step1': '點擊「選目錄」或「選檔案」，選好你想分享的內容',
       'help.step2': '按下「啟動服務」，等待綠色指示燈亮起',
       'help.step3': '用手機或其他裝置掃描 QR 碼，即可上傳和下載檔案',

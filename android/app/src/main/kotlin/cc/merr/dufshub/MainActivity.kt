@@ -26,7 +26,7 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
                 "log" -> {
                     val msg = call.argument<String>("msg") ?: ""
-                    Log.d("inout", msg)
+                    Log.d("dufshub", msg)
                     result.success(null)
                 }
                 "getNativeLibraryDir" -> {
@@ -38,7 +38,7 @@ class MainActivity : FlutterActivity() {
                     } else {
                         ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
                     }
-                    Log.d("inout", "Storage granted: $granted (API ${Build.VERSION.SDK_INT})")
+                    Log.d("dufshub", "Storage granted: $granted (API ${Build.VERSION.SDK_INT})")
                     result.success(granted)
                 }
                 "requestStorage" -> {
@@ -71,13 +71,13 @@ class MainActivity : FlutterActivity() {
                     } else {
                         startService(intent)
                     }
-                    Log.d("inout", "Foreground service start requested: port=$port")
+                    Log.d("dufshub", "Foreground service start requested: port=$port")
                     result.success(true)
                 }
                 "stopForegroundService" -> {
                     val intent = Intent(this, DufsForegroundService::class.java)
                     stopService(intent)
-                    Log.d("inout", "Foreground service stop requested")
+                    Log.d("dufshub", "Foreground service stop requested")
                     result.success(true)
                 }
                 "isServiceRunning" -> {

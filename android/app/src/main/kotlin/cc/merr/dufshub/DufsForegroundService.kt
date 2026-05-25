@@ -15,8 +15,8 @@ class DufsForegroundService : Service() {
     private var dufsProcess: Process? = null
 
     companion object {
-        private const val TAG = "inout"
-        private const val CHANNEL_ID = "inout_server"
+        private const val TAG = "dufshub"
+        private const val CHANNEL_ID = "dufshub_server"
         private const val NOTIFICATION_ID = 1001
 
         @Volatile
@@ -223,10 +223,10 @@ class DufsForegroundService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "inout Server",
+                "DufsHub Server",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "inout 文件分享服务运行中"
+                description = "DufsHub 文件分享服务运行中"
                 setShowBadge(false)
             }
             val manager = getSystemService(NotificationManager::class.java)
@@ -249,7 +249,7 @@ class DufsForegroundService : Service() {
         }
 
         return builder
-            .setContentTitle("inout 文件分享")
+            .setContentTitle("DufsHub 文件分享")
             .setContentText("服务运行中 (端口 $port)")
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(pendingIntent)

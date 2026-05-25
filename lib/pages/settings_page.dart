@@ -88,7 +88,7 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Column(
               children: [
                 Text(
-                  'INOUT',
+                  'DUFSHUB',
                   style: TextStyle(
                     fontFamily: 'PressStart2P',
                     fontSize: 24,
@@ -113,11 +113,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: 8),
                 GestureDetector(
                   onTap: () => launchUrl(
-                    Uri.parse('https://github.com/zocs/inout'),
+                    Uri.parse('https://github.com/zocs/dufshub'),
                     mode: LaunchMode.externalApplication,
                   ),
                   child: Text(
-                    'github.com/zocs/inout',
+                    'github.com/zocs/dufshub',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w500,
@@ -146,7 +146,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       onPressed: () => showLicensePage(
                         context: context,
-                        applicationName: 'inout',
+                        applicationName: 'DufsHub',
                         applicationVersion: 'v$appVersion',
                         applicationLegalese:
                             'Copyright (c) 2026 zocs\nMIT License',

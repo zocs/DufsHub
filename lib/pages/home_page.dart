@@ -271,7 +271,7 @@ class _HomePageState extends State<HomePage>
             ),
             const SizedBox(width: 6),
             Text(
-              'inout',
+              'DufsHub',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,

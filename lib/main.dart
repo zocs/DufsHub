@@ -93,7 +93,7 @@ class _DufsHubAppState extends State<DufsHubApp> with TrayListener, WindowListen
       final icoBytes = await assetBundle.load('assets/icon/tray_icon.ico');
       final pngBytes = await assetBundle.load('assets/icon/app_icon.png');
       if (!mounted) return;
-      final dir = await Directory.systemTemp.createTemp('inout_tray');
+      final dir = await Directory.systemTemp.createTemp('dufshub_tray');
       if (Platform.isWindows) {
         final iconFile = File('${dir.path}/tray_icon.ico');
         await iconFile.writeAsBytes(icoBytes.buffer.asUint8List());
@@ -103,7 +103,7 @@ class _DufsHubAppState extends State<DufsHubApp> with TrayListener, WindowListen
         await iconFile.writeAsBytes(pngBytes.buffer.asUint8List());
         await trayManager.setIcon(iconFile.path);
       }
-      await trayManager.setToolTip('inout');
+      await trayManager.setToolTip('DufsHub');
 
       // Small delay before setting context menu (Windows needs icon to be registered first)
       await Future.delayed(const Duration(milliseconds: 200));
