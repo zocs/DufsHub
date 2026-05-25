@@ -2,6 +2,7 @@ package cc.merr.dufshub
 
 import android.app.*
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
@@ -59,7 +60,20 @@ class DufsForegroundService : Service() {
             killDufs()
 
             val notification = buildNotification(port, path)
-            startForeground(NOTIFICATION_ID, notification)
+            // Android 14+ (API 34) requires the 3-arg startForeground with an
+            // explicit service type; the manifest already declares
+            // android:foregroundServiceType="dataSync". Calling the 2-arg
+            // overload on API 34+ throws MissingForegroundServiceTypeException
+            // and the service crashes on start.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
 
             lastError = null
             val success = startDufs(port, path, args)
