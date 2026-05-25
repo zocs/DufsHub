@@ -433,6 +433,21 @@ class DufsService extends ChangeNotifier {
   /// Partial line buffered between incremental reads
   String _logFileRemainder = '';
 
+  /// Redact the value following any `--auth` flag so credentials (user:pass)
+  /// do not leak into logcat / debugPrint. Kotlin-side already redacted in
+  /// v0.3.4; this is the missing Dart half (C1).
+  List<String> _redactedArgs(List<String> args) {
+    final out = <String>[];
+    for (var i = 0; i < args.length; i++) {
+      out.add(args[i]);
+      if (args[i] == '--auth' && i + 1 < args.length) {
+        out.add('***@/:rw');
+        i++;
+      }
+    }
+    return out;
+  }
+
   // ==================== Start dufs via FFI (desktop) ====================
   Future<void> _startDufsFfi(ServerConfig config, int port) async {
     if (!_dufsFfi.isLoaded) {
@@ -442,7 +457,7 @@ class DufsService extends ChangeNotifier {
     }
     final args = _buildArgs(config, port);
     final argv = ['dufs', ...args];
-    _log('dufs ffi start: ${args.join(' ')}');
+    _log('dufs ffi start: ${_redactedArgs(args).join(' ')}');
     final ret = _dufsFfi.start(argv);
     if (ret != 0) {
       _log('dufs FFI start returned $ret (failure)');
@@ -464,7 +479,7 @@ class DufsService extends ChangeNotifier {
     final workDir = config.shareSingleFile
         ? p.dirname(config.path)
         : config.path;
-    _log('dufs: $binPath ${args.join(' ')}');
+    _log('dufs: $binPath ${_redactedArgs(args).join(' ')}');
     _process = await Process.start(binPath, args, workingDirectory: workDir);
     _process!.stdout.listen((d) {
       final line = String.fromCharCodes(d).trim();
