@@ -1,27 +1,27 @@
 <div align="center">
 
-<h1><img src="fastlane/metadata/android/en-US/icon.png" width="48" align="absmiddle"> inout</h1>
+<h1><img src="fastlane/metadata/android/en-US/icon.png" width="48" align="absmiddle"> DufsHub</h1>
 
-**让文件来去自如。** — 轻点一下，文件分享即刻在线。
+**dufs 的多端中枢。** — 局域网/工业离线场景下的轻量文件分发 GUI。
 
-[![Release](https://img.shields.io/github/v/release/zocs/inout)](https://github.com/zocs/inout/releases)
-[![License](https://img.shields.io/github/license/zocs/inout)](LICENSE)
-[![Downloads](https://img.shields.io/github/downloads/zocs/inout/total)](https://github.com/zocs/inout/releases)
+[![Release](https://img.shields.io/github/v/release/zocs/dufshub)](https://github.com/zocs/dufshub/releases)
+[![License](https://img.shields.io/github/license/zocs/dufshub)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/zocs/dufshub/total)](https://github.com/zocs/dufshub/releases)
 [![Flutter](https://img.shields.io/badge/Flutter-3.41+-blue)](https://flutter.dev)
-[![Windows](https://img.shields.io/badge/Windows-green)](https://github.com/zocs/inout/releases)
-[![Android](https://img.shields.io/badge/Android-green)](https://github.com/zocs/inout/releases)
-[![Linux](https://img.shields.io/badge/Linux-green)](https://github.com/zocs/inout/releases)
-[![macOS](https://img.shields.io/badge/macOS-yellow)](https://github.com/zocs/inout/releases)
-[![Build](https://img.shields.io/github/actions/workflow/status/zocs/inout/build.yml?label=build)](https://github.com/zocs/inout/actions)
+[![Windows](https://img.shields.io/badge/Windows-green)](https://github.com/zocs/dufshub/releases)
+[![Android](https://img.shields.io/badge/Android-green)](https://github.com/zocs/dufshub/releases)
+[![Linux](https://img.shields.io/badge/Linux-green)](https://github.com/zocs/dufshub/releases)
+[![macOS](https://img.shields.io/badge/macOS-yellow)](https://github.com/zocs/dufshub/releases)
+[![Build](https://img.shields.io/github/actions/workflow/status/zocs/dufshub/build.yml?label=build)](https://github.com/zocs/dufshub/actions)
 [![F-Droid](https://img.shields.io/badge/F-Droid-pending-blue)](https://gitlab.com/fdroid/fdroiddata)
 
-[English](./README.md) · [隐私政策](./PRIVACY.md) · [📥 下载](https://github.com/zocs/inout/releases)
+[English](./README.md) · [隐私政策](./PRIVACY.md) · [📥 下载](https://github.com/zocs/dufshub/releases)
 
 </div>
 
 ---
 
-基于 [dufs](https://github.com/sigoden/dufs) 的图形界面版本。**零配置，零参数**——仅需在一台设备安装 inout，分享一个文件夹或单个文件，其他设备打开浏览器访问分享页即可轻松上传下载。
+基于 [dufs](https://github.com/sigoden/dufs) 的图形分发工具，专为**气密局域网 / 工业离线环境**优化。**零配置，零参数**——仅需在一台设备安装 DufsHub，分享一个文件夹或单个文件，其他设备打开浏览器访问分享页即可轻松上传下载。
 
 ---
 
@@ -31,9 +31,9 @@
 
 ---
 
-## ✨ 为什么用 inout？
+## ✨ 为什么用 DufsHub？
 
-> **另一端不用额外安装任何东西** — 只需一台设备装 inout，启动服务，其他人打开浏览器就可上传下载文件。
+> **另一端不用额外安装任何东西** — 只需一台设备装 DufsHub，启动服务，其他人打开浏览器就可上传下载文件。
 
 | 特性 | |
 |:---|:---:|
@@ -53,6 +53,7 @@
 
 | 场景 | 怎么用 |
 |:---|:---:|
+| 🏭 **工厂 / 工业离线分发** | 一台 PC 启动 → 操作员扫码 → 分发固件/日志/资料 |
 | 🏠 **家里传文件** | 手机连上WiFi → 电脑浏览器访问 → 传照片/文档 |
 | 💼 **办公室临时传** | 一台电脑启动 → 同事扫码 → 共享项目文件 |
 | 🎓 **课堂发资料** | 老师启动 → 学生扫码 → 下载课件 |
@@ -67,13 +68,13 @@
 
 | 平台 | 文件 | |
 |:---|:---|:---:|
-| 🪟 **Windows** | `inout-*-windows-x64-setup.exe`（安装版）或 `.zip`（便携版） | ✅ 已测试 |
-| 🤖 **Android** | `inout-*-android-arm64.apk` | ✅ 已测试 |
+| 🪟 **Windows** | `dufshub-*-windows-x64-setup.exe`（安装版）或 `.zip`（便携版） | ✅ 已测试 |
+| 🤖 **Android** | `dufshub-*-android-arm64.apk` | ✅ 已测试 |
 | 🐧 **Linux x64** | `.AppImage`（零依赖）或 `.deb` | ✅ 已测试 |
 | 🐧 **Linux ARM64** | `.AppImage` 或 `.deb`（理论兼容麒麟/UOS） | ✅ 已测试 |
-| 🍎 **macOS** | `inout-*-macos-arm64.zip` | ⚠️ 未实测 |
+| 🍎 **macOS** | `DufsHub-*-macos-arm64.zip` | ⚠️ 未实测 |
 
-> 📥 [去 Releases 下载最新版](https://github.com/zocs/inout/releases)
+> 📥 [去 Releases 下载最新版](https://github.com/zocs/dufshub/releases)
 >
 > 🤖 [F-Droid](https://f-droid.org/) 正在审核中
 
@@ -104,7 +105,7 @@
 
 ## 🔒 安全提醒
 
-> ⚠️ inout 默认监听所有网卡（`0.0.0.0`）
+> ⚠️ DufsHub 默认监听所有网卡（`0.0.0.0`）
 
 | 网络环境 | 建议 |
 |:---|:---:|
@@ -126,7 +127,7 @@
 
 **现象：** 看不到文件，提示"需要开启所有文件访问权限"
 
-**解决：** 设置 → 应用 → inout → 权限 → 开启「所有文件访问」
+**解决：** 设置 → 应用 → DufsHub → 权限 → 开启「所有文件访问」
 
 ### 端口被占用
 
@@ -138,26 +139,26 @@
 
 **解决：**
 ```bash
-chmod +x inout-*.AppImage
-./inout-*.AppImage
+chmod +x dufshub-*.AppImage
+./dufshub-*.AppImage
 ```
 
 ### macOS — 提示"无法验证开发者"
 
 **解决：**
 ```bash
-xattr -d com.apple.quarantine inout.app
+xattr -d com.apple.quarantine DufsHub.app
 ```
 
 ### Windows — 其他设备连不上
 
-**解决：** 允许 inout 通过 Windows 防火墙（首次启动会弹窗提示）
+**解决：** 允许 DufsHub 通过 Windows 防火墙（首次启动会弹窗提示）
 
 ---
 
 ## ❓ 常见问题
 
-**Q: 对方要装 inout 吗？**
+**Q: 对方要装 DufsHub 吗？**
 A: 不用！一台设备装就行，其他人开浏览器就能用。
 
 **Q: 可以只分享单个文件，不分享整个文件夹吗？**
@@ -193,8 +194,8 @@ A: 不会！文件只在设备之间传输，不经过任何服务器。
 ### 构建
 
 ```bash
-git clone https://github.com/zocs/inout.git
-cd inout
+git clone https://github.com/zocs/dufshub.git
+cd dufshub
 flutter pub get
 
 # 运行（调试）
@@ -229,6 +230,7 @@ GitHub Actions 在 tag 推送（`v*`）时自动构建所有平台并创建 rele
 lib/
 ├── main.dart                       # 入口 + 窗口初始化
 ├── app.dart                        # MaterialApp + 主题
+├── constants.dart                  # 反向域 + MethodChannel 常量
 ├── l10n/app_localizations.dart     # 三语国际化
 ├── models/
 │   ├── server_config.dart          # 配置模型 + 持久化
@@ -247,7 +249,7 @@ scripts/
 ├── build_macos.sh                  # macOS 打包
 └── dufs-ffi/lib.rs                 # Rust FFI 封装
 android/.../DufsForegroundService.kt # Android 原生 Service
-installer/inout.nsi                 # Windows NSIS 安装包
+installer/dufshub.nsi               # Windows NSIS 安装包
 ```
 
 桌面端通过 Rust FFI 内嵌 `dufs`，Android 端通过前台原生 Service 管理文件服务，因此在低内存设备上也能更稳定地跨页面生命周期运行。
@@ -256,7 +258,7 @@ installer/inout.nsi                 # Windows NSIS 安装包
 
 ## 🙏 致谢
 
-inout 基于 [dufs](https://github.com/sigoden/dufs) 构建——[sigoden](https://github.com/sigoden) 写的很好用的文件服务器。没有 dufs 就没有 inout，感谢让文件分享变得这么简单。
+DufsHub 基于 [dufs](https://github.com/sigoden/dufs) 构建——[sigoden](https://github.com/sigoden) 写的很好用的文件服务器。没有 dufs 就没有 DufsHub，感谢让文件分享变得这么简单。
 
 ---
 
@@ -268,6 +270,6 @@ inout 基于 [dufs](https://github.com/sigoden/dufs) 构建——[sigoden](https
 
 <div align="center">
 
-**inout** — 让文件来去自如，仅此而已。
+**DufsHub** — dufs 的多端中枢。
 
 </div>

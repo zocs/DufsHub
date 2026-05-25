@@ -1,4 +1,4 @@
-# Release Checklist — inout
+# Release Checklist — DufsHub
 
 每次发版按此顺序检查，全部打勾后再 tag push。
 
@@ -8,7 +8,7 @@
 
 - [ ] `pubspec.yaml` → `version: X.Y.Z+Z`
 - [ ] `lib/app.dart` → `appVersion = 'X.Y.Z'`
-- [ ] `installer/inout.nsi` → `!define APP_VERSION "X.Y.Z"`
+- [ ] `installer/dufshub.nsi` → `!define APP_VERSION "X.Y.Z"`
 - [ ] `.fdroid.yml` → `versionName: X.Y.Z`, `versionCode: Z`
 - [ ] `.fdroid.yml` → `CurrentVersion: X.Y.Z`, `CurrentVersionCode: Z`
 - [ ] `.fdroid.yml` → `build` 步骤中 `--build-name=X.Y.Z --build-number=Z`
