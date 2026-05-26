@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
@@ -10,6 +11,18 @@ import 'services/dufs_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Opt into the device's highest supported refresh rate on Android. Without
+  // this call most OEMs (Xiaomi/OPPO/Realme/OnePlus) cap third-party apps at
+  // 60Hz for power saving, which produces visible micro-judder on 90/120Hz
+  // panels. Safe no-op on devices that only support 60Hz.
+  if (Platform.isAndroid) {
+    try {
+      await FlutterDisplayMode.setHighRefreshRate();
+    } catch (_) {
+      // Some devices return errors from this API — ignore and accept 60Hz.
+    }
+  }
 
   // Pull the version from the platform package metadata so it always tracks
   // pubspec.yaml without manual sync. (See lib/app.dart::appVersion.)
