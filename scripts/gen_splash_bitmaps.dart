@@ -180,11 +180,21 @@ void main() {
     'xxxhdpi': 6,
   };
 
-  // Base font-pixel size at mdpi (each letter pixel = this many dp).
-  // At mdpi 1dp = 1px → 5px per font pixel → 7 letters of 8px each + 6 gaps
-  // = 62 font-pixels × 5 = 310×40px at mdpi.
-  // At xxxhdpi (6x) that's 1860×240px — comfortably large for a splash.
-  const baseScale = 5;
+  // Target visual width at mdpi (≈ 56% of a typical 360dp-wide phone). Auto-
+  // derive baseScale from this so the splash stays comfortably inside the
+  // screen no matter how many letters we render — change the letter set and
+  // the script self-balances. (Previously baseScale was hard-coded to 5,
+  // which was fine for "inout" (5 letters) but pushed "DufsHub" (7 letters)
+  // right to the screen edges.)
+  const targetMdpiWidthPx = 200;
+  const gap = 1; // must match _renderDufsHub
+  const letterW = 8;
+  final numLetters = _letters.length;
+  final totalFontW = numLetters * letterW + (numLetters - 1) * gap;
+  final baseScale = (targetMdpiWidthPx ~/ totalFontW).clamp(2, 8);
+  // "DufsHub" 7 letters → 62 font-px → baseScale=3 → 186×24px @ mdpi.
+  // (Historical "inout" 5 letters → 44 font-px → baseScale=4 → 176×32px @ mdpi.)
+  print('Letters: $numLetters, totalFontW: $totalFontW, baseScale: $baseScale');
 
   for (final cfg in configs) {
     final dir = cfg['dir'] as String;
