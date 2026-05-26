@@ -95,6 +95,28 @@ set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib")
 install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
   COMPONENT Runtime)
 
+# Bundle the prebuilt dufs shared library next to the binary so dev workflows
+# (flutter run -d linux / flutter build linux) produce a self-contained bundle.
+# scripts/build_linux.sh handles the same copy for packaging; this rule covers
+# the native CMake path. lib/services/dufs_ffi.dart::resolveDufsLibPath loads
+# from ${exeDir}/libdufs.so on Linux.
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+  set(DUFS_SRC "${CMAKE_SOURCE_DIR}/../assets/dufs/libdufs-linux-aarch64.so")
+else()
+  set(DUFS_SRC "${CMAKE_SOURCE_DIR}/../assets/dufs/libdufs-linux-x86_64.so")
+endif()
+if(EXISTS "${DUFS_SRC}")
+  install(FILES "${DUFS_SRC}"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}"
+    RENAME "libdufs.so"
+    COMPONENT Runtime)
+else()
+  message(WARNING
+    "DufsHub: ${DUFS_SRC} not found — run scripts/build_dufs.sh "
+    "linux-x86_64 (or linux-arm64) first, otherwise the server start "
+    "will fail at runtime with 'cannot open shared object file'.")
+endif()
+
 install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   COMPONENT Runtime)
 
