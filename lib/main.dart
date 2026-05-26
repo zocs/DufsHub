@@ -116,7 +116,14 @@ class _DufsHubAppState extends State<DufsHubApp> with TrayListener, WindowListen
         await iconFile.writeAsBytes(pngBytes.buffer.asUint8List());
         await trayManager.setIcon(iconFile.path);
       }
-      await trayManager.setToolTip('DufsHub');
+      // setToolTip throws MissingPluginException on Linux (tray_manager 0.5.2
+      // doesn't implement it). Isolate the failure so the rest of init —
+      // crucially the context menu — still runs.
+      try {
+        await trayManager.setToolTip('DufsHub');
+      } catch (e) {
+        debugPrint('Tray setToolTip skipped: $e');
+      }
 
       // Small delay before setting context menu (Windows needs icon to be registered first)
       await Future.delayed(const Duration(milliseconds: 200));
