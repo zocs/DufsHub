@@ -1,21 +1,21 @@
-; inout.nsi - NSIS Installer Script for inout
+; dufshub.nsi - NSIS Installer Script for DufsHub
 Unicode true
 SetCompressor /SOLID lzma
 
-!define APP_NAME "inout"
+!define APP_NAME "DufsHub"
 !ifndef APP_VERSION
   !define APP_VERSION "0.0.0"
 !endif
 !define APP_PUBLISHER "zocs"
-!define APP_URL "https://github.com/zocs/inout"
-!define APP_EXE "inout.exe"
+!define APP_URL "https://github.com/zocs/dufshub"
+!define APP_EXE "dufshub.exe"
 
 !include "MUI2.nsh"
 !include "FileFunc.nsh"
 !include "LogicLib.nsh"
 
 Name "${APP_NAME} ${APP_VERSION}"
-OutFile "inout-${APP_VERSION}-windows-x64-setup.exe"
+OutFile "dufshub-${APP_VERSION}-windows-x64-setup.exe"
 InstallDir "$PROGRAMFILES64\${APP_NAME}"
 RequestExecutionLevel admin
 
@@ -32,7 +32,7 @@ RequestExecutionLevel admin
 !insertmacro MUI_LANGUAGE "SimpChinese"
 !insertmacro MUI_LANGUAGE "English"
 
-; Check if inout.exe is running, kill if user confirms
+; Check if dufshub.exe is running, kill if user confirms
 ; Uses a fast WMI-based check instead of slow tasklist
 !macro CheckAndKillProcess
   nsExec::ExecToStack 'cmd /c tasklist /FI "IMAGENAME eq ${APP_EXE}" /NH 2^>nul ^| findstr /I "${APP_EXE}"'

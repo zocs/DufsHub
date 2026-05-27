@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import '../constants.dart';
 import '../models/server_config.dart';
 import '../models/transfer_log.dart';
 import 'dufs_ffi.dart';
@@ -16,7 +17,7 @@ import 'dufs_ffi.dart';
 bool get _useFfi => Platform.isLinux || Platform.isMacOS || Platform.isWindows;
 
 class DufsService extends ChangeNotifier {
-  static const _ch = MethodChannel('cc.merr.inout/native');
+  static const _ch = MethodChannel(kMethodChannel);
 
   final DufsFfi _dufsFfi = DufsFfi();
   Process? _process;
@@ -115,7 +116,7 @@ class DufsService extends ChangeNotifier {
   ///
   /// Strategy:
   ///   1. Try the requested port. If free, use it.
-  ///   2. If busy, try to identify and stop a leftover dufs/inout process
+  ///   2. If busy, try to identify and stop a leftover dufs process
   ///      that is holding it (same user only). Re-probe.
   ///   3. If still busy, scan +1, +2, ... up to +9. Return the first free.
   ///   4. None free in range → throw.
@@ -244,7 +245,7 @@ class DufsService extends ChangeNotifier {
 
   Future<void> _prepareLogFile() async {
     final tmpDir = await getTemporaryDirectory();
-    _logFilePath = '${tmpDir.path}/inout_dufs.log';
+    _logFilePath = '${tmpDir.path}/dufshub_dufs.log';
     try {
       await File(_logFilePath!).writeAsString('');
     } catch (_) {}
@@ -432,6 +433,21 @@ class DufsService extends ChangeNotifier {
   /// Partial line buffered between incremental reads
   String _logFileRemainder = '';
 
+  /// Redact the value following any `--auth` flag so credentials (user:pass)
+  /// do not leak into logcat / debugPrint. Kotlin-side already redacted in
+  /// v0.3.4; this is the missing Dart half (C1).
+  List<String> _redactedArgs(List<String> args) {
+    final out = <String>[];
+    for (var i = 0; i < args.length; i++) {
+      out.add(args[i]);
+      if (args[i] == '--auth' && i + 1 < args.length) {
+        out.add('***@/:rw');
+        i++;
+      }
+    }
+    return out;
+  }
+
   // ==================== Start dufs via FFI (desktop) ====================
   Future<void> _startDufsFfi(ServerConfig config, int port) async {
     if (!_dufsFfi.isLoaded) {
@@ -441,7 +457,7 @@ class DufsService extends ChangeNotifier {
     }
     final args = _buildArgs(config, port);
     final argv = ['dufs', ...args];
-    _log('dufs ffi start: ${args.join(' ')}');
+    _log('dufs ffi start: ${_redactedArgs(args).join(' ')}');
     final ret = _dufsFfi.start(argv);
     if (ret != 0) {
       _log('dufs FFI start returned $ret (failure)');
@@ -463,7 +479,7 @@ class DufsService extends ChangeNotifier {
     final workDir = config.shareSingleFile
         ? p.dirname(config.path)
         : config.path;
-    _log('dufs: $binPath ${args.join(' ')}');
+    _log('dufs: $binPath ${_redactedArgs(args).join(' ')}');
     _process = await Process.start(binPath, args, workingDirectory: workDir);
     _process!.stdout.listen((d) {
       final line = String.fromCharCodes(d).trim();

@@ -97,21 +97,27 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > /tmp/inout-release.jks
-          echo "KEYSTORE_FILE=/tmp/inout-release.jks" >> $GITHUB_ENV
+          echo "$KEYSTORE_BASE64" | base64 -d > /tmp/dufshub-release.jks
+          echo "KEYSTORE_FILE=/tmp/dufshub-release.jks" >> $GITHUB_ENV
           echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
+      - name: Require keystore for tag-triggered release
+        if: startsWith(github.ref, 'refs/tags/v') && env.KEYSTORE_FILE == ''
+        run: |
+          echo "::error::Release tag ${{ github.ref_name }} pushed but KEYSTORE_BASE64 secret is missing."
+          echo "::error::Refusing to build a debug-signed APK to the release channel."
+          exit 1
       - name: Build APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: flutter build apk --release
       - name: Rename APK
-        run: cp build/app/outputs/flutter-apk/app-release.apk inout-${{ env.VERSION }}-android-arm64.apk
+        run: cp build/app/outputs/flutter-apk/app-release.apk dufshub-${{ env.VERSION }}-android-arm64.apk
       - uses: actions/upload-artifact@v4
         with:
           name: android
           path: |
-            inout-${{ env.VERSION }}-android-arm64.apk
+            dufshub-${{ env.VERSION }}-android-arm64.apk
 
   build-windows:
     name: Windows x64
@@ -145,19 +151,19 @@ jobs:
         shell: bash
         run: cp "${{ github.workspace }}/assets/dufs/dufs-windows-x86_64.dll" build/windows/x64/runner/Release/dufs.dll
       - name: Create zip
-        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath inout-${{ env.VERSION }}-windows-x64.zip
+        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath dufshub-${{ env.VERSION }}-windows-x64.zip
       - name: Install NSIS
         run: |
           choco install nsis -y
           echo "C:\Program Files (x86)\NSIS" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Build NSIS installer
-        run: makensis /DAPP_VERSION=${{ env.VERSION }} installer\inout.nsi
+        run: makensis /DAPP_VERSION=${{ env.VERSION }} installer\dufshub.nsi
       - uses: actions/upload-artifact@v4
         with:
           name: windows
           path: |
-            inout-${{ env.VERSION }}-windows-x64.zip
-            inout-${{ env.VERSION }}-windows-x64-setup.exe
+            dufshub-${{ env.VERSION }}-windows-x64.zip
+            dufshub-${{ env.VERSION }}-windows-x64-setup.exe
 
   build-linux-x64:
     name: Linux x64
@@ -286,7 +292,7 @@ jobs:
         run: |
           flutter build ios --release --no-codesign
           mkdir -p build/ios/output
-          APP_NAME="inout"
+          APP_NAME="DufsHub"
           VERSION=$(grep 'version:' pubspec.yaml | head -1 | awk '{print $2}' | awk -F'+' '{print $1}')
           cp -r build/ios/iphoneos/Runner.app "build/ios/output/${APP_NAME}-${VERSION}-ios-arm64.app"
           cd build/ios/output && zip -r -y "${APP_NAME}-${VERSION}-ios-arm64.zip" "${APP_NAME}-${VERSION}-ios-arm64.app"
@@ -323,7 +329,7 @@ jobs:
             | macOS ARM64 | `.zip` (app bundle) | ⚠️ 仅编译测试，**未签名、未实机测试** |
             | iOS arm64 | `.zip` (app bundle, no codesign) | ⚠️ 仅编译测试，**未签名、未实机测试** |
 
-            > 🍎 macOS 未签名：解压后执行 `xattr -cr inout.app` 去除隔离属性。
+            > 🍎 macOS 未签名：解压后执行 `xattr -cr DufsHub.app` 去除隔离属性。
           files: |
             artifacts/**/*.AppImage
             artifacts/**/*.deb

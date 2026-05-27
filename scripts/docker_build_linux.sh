@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-IMAGE_NAME="inout-linux-builder"
+IMAGE_NAME="dufshub-linux-builder"
 ARCH="${1:-x86_64}"
 DOCKER_BUILD_ARGS=()
 DOCKER_ENV=()
@@ -66,8 +66,8 @@ docker run --rm \
   -e CARGO_HOME=/cache/cargo \
   -e RUSTUP_HOME=/cache/rustup \
   -e CARGO_BUILD_JOBS="$CARGO_BUILD_JOBS" \
-  -e INOUT_BUILD_ROOT=build \
-  -e INOUT_OUTPUT_DIR=/outputs/packages \
+  -e DUFSHUB_BUILD_ROOT=build \
+  -e DUFSHUB_OUTPUT_DIR=/outputs/packages \
   "${DOCKER_ENV[@]}" \
   "$IMAGE_NAME" \
   bash -lc "

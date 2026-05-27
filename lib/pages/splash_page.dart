@@ -63,7 +63,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                       Transform.scale(
                         scale: scale,
                         child: Text(
-                          'inout',
+                          'DufsHub',
                           style: TextStyle(
                             fontFamily: 'PressStart2P',
                             fontSize: 48,

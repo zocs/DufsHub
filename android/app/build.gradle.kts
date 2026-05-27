@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "cc.merr.inout"
+    namespace = "cc.merr.dufshub"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -20,7 +20,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "cc.merr.inout"
+        applicationId = "cc.merr.dufshub"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -33,7 +33,7 @@ android {
             if (keystoreFilePath != null) {
                 storeFile = file(keystoreFilePath)
                 storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
-                keyAlias = System.getenv("KEY_ALIAS") ?: "inout"
+                keyAlias = System.getenv("KEY_ALIAS") ?: "dufshub"
                 keyPassword = System.getenv("KEY_PASSWORD") ?: ""
             }
         }
@@ -41,9 +41,25 @@ android {
 
     buildTypes {
         release {
-            signingConfig = if (System.getenv("KEYSTORE_FILE") != null) {
+            // Fail fast on CI/local release builds when keystore env is
+            // missing — silently falling back to the debug keystore (the
+            // previous behavior) ships a debug-signed APK to the release
+            // channel, which can never be OTA-upgraded by users who
+            // installed it.
+            val keystoreFile: String? = System.getenv("KEYSTORE_FILE")
+            signingConfig = if (!keystoreFile.isNullOrBlank()) {
                 signingConfigs.getByName("release")
+            } else if (gradle.startParameter.taskNames.any {
+                    it.contains("Release", ignoreCase = true) ||
+                        it.contains("Bundle", ignoreCase = true)
+                }) {
+                throw GradleException(
+                    "KEYSTORE_FILE env must be set for release builds. " +
+                        "See scripts/docker_build_android.sh or the CI secret setup."
+                )
             } else {
+                // Non-release tasks (e.g. assembleDebug picking up release
+                // configuration as a side effect) still get debug signing.
                 signingConfigs.getByName("debug")
             }
         }

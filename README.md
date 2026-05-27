@@ -1,27 +1,27 @@
 <div align="center">
 
-<h1><img src="fastlane/metadata/android/en-US/icon.png" width="48" align="absmiddle"> inout</h1>
+<h1><img src="fastlane/metadata/android/en-US/icon.png" width="48" align="absmiddle"> DufsHub</h1>
 
-**Files in and out, that's all.** — 轻点一下，文件分享即刻在线。
+**The hub for dufs.** — dufs 的多端中枢。
 
-[![Release](https://img.shields.io/github/v/release/zocs/inout)](https://github.com/zocs/inout/releases)
-[![License](https://img.shields.io/github/license/zocs/inout)](LICENSE)
-[![Downloads](https://img.shields.io/github/downloads/zocs/inout/total)](https://github.com/zocs/inout/releases)
+[![Release](https://img.shields.io/github/v/release/zocs/dufshub)](https://github.com/zocs/dufshub/releases)
+[![License](https://img.shields.io/github/license/zocs/dufshub)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/zocs/dufshub/total)](https://github.com/zocs/dufshub/releases)
 [![Flutter](https://img.shields.io/badge/Flutter-3.41+-blue)](https://flutter.dev)
-[![Windows](https://img.shields.io/badge/Windows-green)](https://github.com/zocs/inout/releases)
-[![Android](https://img.shields.io/badge/Android-green)](https://github.com/zocs/inout/releases)
-[![Linux](https://img.shields.io/badge/Linux-green)](https://github.com/zocs/inout/releases)
-[![macOS](https://img.shields.io/badge/macOS-yellow)](https://github.com/zocs/inout/releases)
-[![Build](https://img.shields.io/github/actions/workflow/status/zocs/inout/build.yml?label=build)](https://github.com/zocs/inout/actions)
+[![Windows](https://img.shields.io/badge/Windows-green)](https://github.com/zocs/dufshub/releases)
+[![Android](https://img.shields.io/badge/Android-green)](https://github.com/zocs/dufshub/releases)
+[![Linux](https://img.shields.io/badge/Linux-green)](https://github.com/zocs/dufshub/releases)
+[![macOS](https://img.shields.io/badge/macOS-yellow)](https://github.com/zocs/dufshub/releases)
+[![Build](https://img.shields.io/github/actions/workflow/status/zocs/dufshub/build.yml?label=build)](https://github.com/zocs/dufshub/actions)
 [![F-Droid](https://img.shields.io/badge/F-Droid-pending-blue)](https://gitlab.com/fdroid/fdroiddata)
 
-[中文文档](./README_zh.md) · [Privacy Policy](./PRIVACY.md) · [📥 Releases](https://github.com/zocs/inout/releases)
+[中文文档](./README_zh.md) · [Privacy Policy](./PRIVACY.md) · [📥 Releases](https://github.com/zocs/dufshub/releases)
 
 </div>
 
 ---
 
-A graphical file sharing tool based on [dufs](https://github.com/sigoden/dufs). **Zero config, zero barrier** — share a folder or a single file from one device, and anyone with a browser can access and transfer it. The other side needs no app.
+A Dufs-based, lightweight cross-platform file distribution GUI optimized for **air-gapped LANs and restricted industrial environments**. Built on [dufs](https://github.com/sigoden/dufs). **Zero config, zero barrier** — share a folder or a single file from one device, and anyone with a browser can access and transfer it. The other side needs no app.
 
 ---
 
@@ -31,9 +31,9 @@ A graphical file sharing tool based on [dufs](https://github.com/sigoden/dufs). 
 
 ---
 
-## ✨ Why inout?
+## ✨ Why DufsHub?
 
-> **The other side doesn't need an app.** Install inout on ONE device, start the server, and anyone with a browser can upload and download files.
+> **The other side doesn't need an app.** Install DufsHub on ONE device, start the server, and anyone with a browser can upload and download files.
 
 | Feature | |
 |:---|:---:|
@@ -53,6 +53,7 @@ A graphical file sharing tool based on [dufs](https://github.com/sigoden/dufs). 
 
 | Scenario | How |
 |:---|:---:|
+| 🏭 **Factory / industrial offline transfer** | One PC starts → operators scan → distribute firmware / logs / docs |
 | 🏠 **Home file sharing** | Phone hotspot → browser access → transfer photos / docs |
 | 💼 **Office quick transfer** | One PC starts → colleagues scan → share project files |
 | 🎓 **Classroom distribution** | Teacher starts → students scan → download courseware |
@@ -67,13 +68,13 @@ A graphical file sharing tool based on [dufs](https://github.com/sigoden/dufs). 
 
 | Platform | File | |
 |:---|:---|:---:|
-| 🪟 **Windows** | `inout-*-windows-x64-setup.exe` (installer) or `.zip` (portable) | ✅ Tested |
-| 🤖 **Android** | `inout-*-android-arm64.apk` | ✅ Tested |
+| 🪟 **Windows** | `dufshub-*-windows-x64-setup.exe` (installer) or `.zip` (portable) | ✅ Tested |
+| 🤖 **Android** | `dufshub-*-android-arm64.apk` | ✅ Tested |
 | 🐧 **Linux x64** | `.AppImage` (zero deps) or `.deb` | ✅ Tested |
 | 🐧 **Linux ARM64** | `.AppImage` or `.deb` (Kylin/UOS compatible) | ✅ Tested |
-| 🍎 **macOS** | `inout-*-macos-arm64.zip` | ⚠️ Untested |
+| 🍎 **macOS** | `DufsHub-*-macos-arm64.zip` | ⚠️ Untested |
 
-> 📥 [Download latest release](https://github.com/zocs/inout/releases)
+> 📥 [Download latest release](https://github.com/zocs/dufshub/releases)
 >
 > 🤖 Also available on [F-Droid](https://f-droid.org/) (pending review)
 
@@ -104,7 +105,7 @@ A graphical file sharing tool based on [dufs](https://github.com/sigoden/dufs). 
 
 ## 🔒 Security
 
-> ⚠️ inout binds to all network interfaces by default (`0.0.0.0`)
+> ⚠️ DufsHub binds to all network interfaces by default (`0.0.0.0`)
 
 | Network | Recommendation |
 |:---|:---:|
@@ -126,7 +127,7 @@ A graphical file sharing tool based on [dufs](https://github.com/sigoden/dufs). 
 
 **Symptom:** Can't list files, "Need all files access permission"
 
-**Fix:** Settings → Apps → inout → Permissions → Allow "All files access"
+**Fix:** Settings → Apps → DufsHub → Permissions → Allow "All files access"
 
 ### Port in Use
 
@@ -140,8 +141,8 @@ A graphical file sharing tool based on [dufs](https://github.com/sigoden/dufs). 
 
 **Fix:**
 ```bash
-chmod +x inout-*.AppImage
-./inout-*.AppImage
+chmod +x dufshub-*.AppImage
+./dufshub-*.AppImage
 ```
 
 ### macOS — Developer Verification Blocked
@@ -150,24 +151,24 @@ chmod +x inout-*.AppImage
 
 **Fix:**
 ```bash
-xattr -d com.apple.quarantine inout.app
+xattr -d com.apple.quarantine DufsHub.app
 ```
 
 ### Windows — Firewall Blocking
 
 **Symptom:** Other devices can't connect
 
-**Fix:** Allow inout through Windows Firewall (you'll be prompted on first launch)
+**Fix:** Allow DufsHub through Windows Firewall (you'll be prompted on first launch)
 
 ---
 
 ## ❓ FAQ
 
-**Q: Does the other side need inout?**
-A: No! Only one device runs inout. Others just open a browser.
+**Q: Does the other side need DufsHub?**
+A: No! Only one device runs DufsHub. Others just open a browser.
 
 **Q: Can I share a single file instead of a whole folder?**
-A: Yes. Choose a single file and inout will expose just that file through the browser.
+A: Yes. Choose a single file and DufsHub will expose just that file through the browser.
 
 **Q: Can I access it remotely?**
 A: LAN by default. For remote access, use ZeroTier / Tailscale / EasyTier.
@@ -199,8 +200,8 @@ A: No! Everything stays local. Transfers are device-to-device.
 ### Build
 
 ```bash
-git clone https://github.com/zocs/inout.git
-cd inout
+git clone https://github.com/zocs/dufshub.git
+cd dufshub
 flutter pub get
 
 # Run (debug)
@@ -252,6 +253,7 @@ GitHub Actions builds all platforms on tag push (`v*`) and creates a release aut
 lib/
 ├── main.dart                       # Entry + window init
 ├── app.dart                        # MaterialApp + theming
+├── constants.dart                  # Reverse-domain + MethodChannel constants
 ├── l10n/app_localizations.dart     # i18n (zh/en/zhTW)
 ├── models/
 │   ├── server_config.dart          # Config model + persistence
@@ -270,7 +272,7 @@ scripts/
 ├── build_macos.sh                  # macOS packaging
 └── dufs-ffi/lib.rs                 # Rust FFI wrapper
 android/app/src/main/kotlin/.../DufsForegroundService.kt  # Android native service
-installer/inout.nsi                 # Windows NSIS installer
+installer/dufshub.nsi               # Windows NSIS installer
 ```
 
 Desktop builds embed `dufs` through Rust FFI; Android uses a foreground native service to survive Activity recreation on lower-memory devices.
@@ -279,7 +281,7 @@ Desktop builds embed `dufs` through Rust FFI; Android uses a foreground native s
 
 ## 🙏 Acknowledgments
 
-inout is built on top of [dufs](https://github.com/sigoden/dufs) — a brilliant utility file server by [sigoden](https://github.com/sigoden). Without dufs, inout wouldn't exist. Thanks for making file sharing so simple.
+DufsHub is built on top of [dufs](https://github.com/sigoden/dufs) — a brilliant utility file server by [sigoden](https://github.com/sigoden). Without dufs, DufsHub wouldn't exist. Thanks for making file sharing so simple.
 
 ---
 
@@ -291,6 +293,6 @@ inout is built on top of [dufs](https://github.com/sigoden/dufs) — a brilliant
 
 <div align="center">
 
-**inout** — files in and out, that's all.
+**DufsHub** — the hub for dufs.
 
 </div>

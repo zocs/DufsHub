@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
@@ -10,6 +11,18 @@ import 'services/dufs_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Opt into the device's highest supported refresh rate on Android. Without
+  // this call most OEMs (Xiaomi/OPPO/Realme/OnePlus) cap third-party apps at
+  // 60Hz for power saving, which produces visible micro-judder on 90/120Hz
+  // panels. Safe no-op on devices that only support 60Hz.
+  if (Platform.isAndroid) {
+    try {
+      await FlutterDisplayMode.setHighRefreshRate();
+    } catch (_) {
+      // Some devices return errors from this API — ignore and accept 60Hz.
+    }
+  }
 
   // Pull the version from the platform package metadata so it always tracks
   // pubspec.yaml without manual sync. (See lib/app.dart::appVersion.)
@@ -42,20 +55,20 @@ void main() async {
   runApp(
     ChangeNotifierProvider(
       create: (_) => DufsService(),
-      child: InoutApp(config: config),
+      child: DufsHubApp(config: config),
     ),
   );
 }
 
-class InoutApp extends StatefulWidget {
+class DufsHubApp extends StatefulWidget {
   final ServerConfig config;
-  const InoutApp({super.key, required this.config});
+  const DufsHubApp({super.key, required this.config});
 
   @override
-  State<InoutApp> createState() => _InoutAppState();
+  State<DufsHubApp> createState() => _DufsHubAppState();
 }
 
-class _InoutAppState extends State<InoutApp> with TrayListener, WindowListener {
+class _DufsHubAppState extends State<DufsHubApp> with TrayListener, WindowListener {
   late ThemeMode _themeMode;
   late String _colorScheme;
   late String _language;
@@ -93,7 +106,7 @@ class _InoutAppState extends State<InoutApp> with TrayListener, WindowListener {
       final icoBytes = await assetBundle.load('assets/icon/tray_icon.ico');
       final pngBytes = await assetBundle.load('assets/icon/app_icon.png');
       if (!mounted) return;
-      final dir = await Directory.systemTemp.createTemp('inout_tray');
+      final dir = await Directory.systemTemp.createTemp('dufshub_tray');
       if (Platform.isWindows) {
         final iconFile = File('${dir.path}/tray_icon.ico');
         await iconFile.writeAsBytes(icoBytes.buffer.asUint8List());
@@ -103,7 +116,14 @@ class _InoutAppState extends State<InoutApp> with TrayListener, WindowListener {
         await iconFile.writeAsBytes(pngBytes.buffer.asUint8List());
         await trayManager.setIcon(iconFile.path);
       }
-      await trayManager.setToolTip('inout');
+      // setToolTip throws MissingPluginException on Linux (tray_manager 0.5.2
+      // doesn't implement it). Isolate the failure so the rest of init —
+      // crucially the context menu — still runs.
+      try {
+        await trayManager.setToolTip('DufsHub');
+      } catch (e) {
+        debugPrint('Tray setToolTip skipped: $e');
+      }
 
       // Small delay before setting context menu (Windows needs icon to be registered first)
       await Future.delayed(const Duration(milliseconds: 200));

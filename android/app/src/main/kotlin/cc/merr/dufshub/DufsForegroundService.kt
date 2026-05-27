@@ -1,7 +1,8 @@
-package cc.merr.inout
+package cc.merr.dufshub
 
 import android.app.*
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
@@ -14,8 +15,8 @@ class DufsForegroundService : Service() {
     private var dufsProcess: Process? = null
 
     companion object {
-        private const val TAG = "inout"
-        private const val CHANNEL_ID = "inout_server"
+        private const val TAG = "dufshub"
+        private const val CHANNEL_ID = "dufshub_server"
         private const val NOTIFICATION_ID = 1001
 
         @Volatile
@@ -59,7 +60,20 @@ class DufsForegroundService : Service() {
             killDufs()
 
             val notification = buildNotification(port, path)
-            startForeground(NOTIFICATION_ID, notification)
+            // Android 14+ (API 34) requires the 3-arg startForeground with an
+            // explicit service type; the manifest already declares
+            // android:foregroundServiceType="dataSync". Calling the 2-arg
+            // overload on API 34+ throws MissingForegroundServiceTypeException
+            // and the service crashes on start.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
 
             lastError = null
             val success = startDufs(port, path, args)
@@ -209,10 +223,10 @@ class DufsForegroundService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "inout Server",
+                "DufsHub Server",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "inout 文件分享服务运行中"
+                description = "DufsHub 文件分享服务运行中"
                 setShowBadge(false)
             }
             val manager = getSystemService(NotificationManager::class.java)
@@ -235,7 +249,7 @@ class DufsForegroundService : Service() {
         }
 
         return builder
-            .setContentTitle("inout 文件分享")
+            .setContentTitle("DufsHub 文件分享")
             .setContentText("服务运行中 (端口 $port)")
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(pendingIntent)

@@ -1,18 +1,18 @@
 #!/bin/bash
-# build_macos.sh - Build inout for macOS
+# build_macos.sh - Build DufsHub for macOS
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ARCH=${1:-aarch64}
 VERSION=$(grep '^version:' pubspec.yaml | head -1 | awk '{print $2}' | awk -F'+' '{print $1}')
-APP_NAME="inout"
+APP_NAME="DufsHub"
 
 # Architecture mapping
 DARWIN_ARCH=$([ "$ARCH" = "aarch64" ] && echo "aarch64-apple-darwin" || echo "x86_64-apple-darwin")
 DISPLAY_ARCH=$([ "$ARCH" = "aarch64" ] && echo "arm64" || echo "x64")
 ARCHIVE_NAME="${APP_NAME}-${VERSION}-macos-${DISPLAY_ARCH}"
 
-echo "Building inout ${VERSION} for macOS ${DISPLAY_ARCH}..."
+echo "Building DufsHub ${VERSION} for macOS ${DISPLAY_ARCH}..."
 
 # Build dufs shared library (or skip if already present in assets/dufs/)
 DUFS_LIB="assets/dufs/libdufs-macos-${DISPLAY_ARCH}.dylib"
@@ -31,8 +31,8 @@ BUILD_DIR="build/macos/Build/Products/Release"
 OUTPUT_DIR="build/macos/output"
 mkdir -p "$OUTPUT_DIR"
 
-# Copy .app bundle (Flutter uses project name, not app name)
-APP_BUNDLE="${BUILD_DIR}/inout.app"
+# Copy .app bundle (Flutter outputs based on PRODUCT_NAME = DufsHub)
+APP_BUNDLE="${BUILD_DIR}/${APP_NAME}.app"
 if [ ! -d "$APP_BUNDLE" ]; then
   echo "ERROR: ${APP_BUNDLE} not found"
   ls "$BUILD_DIR/" 2>/dev/null

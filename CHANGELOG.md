@@ -1,7 +1,27 @@
 # Changelog / 更新日志
 
-> 所有版本均可在 [GitHub Releases](https://github.com/zocs/inout/releases) 下载。
-> All versions available at [GitHub Releases](https://github.com/zocs/inout/releases).
+> 所有版本均可在 [GitHub Releases](https://github.com/zocs/dufshub/releases) 下载。
+> All versions available at [GitHub Releases](https://github.com/zocs/dufshub/releases).
+
+## Unreleased
+
+**中文：**
+- 🏷️ **项目改名：`inout` → `DufsHub`**（applicationId 由 `cc.merr.inout` 改为 `cc.merr.dufshub`）。这是 breaking change——老版本无法直接 OTA 升级，需要卸载老版本后安装新版本。
+- 🔒 修复 Dart 侧 `--auth user:pass@/:rw` 仍会打到 logcat（v0.3.4 只修了 Kotlin 侧，Dart 侧的 `_log(args.join(...))` 仍泄漏）(C1)
+- 🐛 修复 Android 14+ (API 34) 启动 foreground service 时缺少 `FOREGROUND_SERVICE_TYPE_DATA_SYNC` 参数导致的 `MissingForegroundServiceTypeException` (C2)
+- 🐛 修复 macOS bundle id 仍是 Flutter 模板占位 `com.inout.inoutFlutter` (C3)
+- 🐛 修复 Linux APPLICATION_ID 仍是 Flutter 模板占位 `com.inout.inout` (C4)
+- 🔒 修复 release build keystore 缺失时静默 fallback 到 debug 签名——现在 fail-fast，避免发出 debug-signed APK 到 release 通道导致用户无法 OTA 升级 (C5)
+
+**English:**
+- 🏷️ **Project renamed: `inout` → `DufsHub`** (applicationId changed from `cc.merr.inout` to `cc.merr.dufshub`). This is a breaking change — existing installs cannot OTA-upgrade; users must uninstall the old version and install the new one.
+- 🔒 Fixed Dart side still logging `--auth user:pass@/:rw` to logcat (v0.3.4 only fixed the Kotlin side; Dart's `_log(args.join(...))` still leaked) (C1)
+- 🐛 Fixed Android 14+ (API 34) `MissingForegroundServiceTypeException` crash on service start; now passes `FOREGROUND_SERVICE_TYPE_DATA_SYNC` (C2)
+- 🐛 Fixed macOS bundle id stuck on Flutter template placeholder `com.inout.inoutFlutter` (C3)
+- 🐛 Fixed Linux APPLICATION_ID stuck on Flutter template placeholder `com.inout.inout` (C4)
+- 🔒 Fixed release build silently falling back to the debug keystore when `KEYSTORE_FILE` is missing — now fail-fast, preventing debug-signed APKs from reaching the release channel (C5)
+
+---
 
 ## [v0.3.4](https://github.com/zocs/inout/releases/tag/v0.3.4) (2026-05-02)
 
