@@ -62,13 +62,18 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                     children: [
                       Transform.scale(
                         scale: scale,
+                        // fontSize 24 + letterSpacing 2 visually matches the
+                        // native bitmap splash (186×24px @ mdpi, baseScale=3
+                        // in scripts/gen_splash_bitmaps.dart). Keeping them
+                        // identical removes the jarring "pop bigger" frame
+                        // when Flutter takes over from the native window.
                         child: Text(
                           'DufsHub',
                           style: TextStyle(
                             fontFamily: 'PressStart2P',
-                            fontSize: 48,
+                            fontSize: 24,
                             color: textColor,
-                            letterSpacing: 4,
+                            letterSpacing: 2,
                           ),
                         ),
                       ),

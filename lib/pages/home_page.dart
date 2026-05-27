@@ -681,10 +681,13 @@ class _HomePageState extends State<HomePage>
       height: 56,
       child: FilledButton.icon(
         icon: busy
-            ? const SizedBox(
+            ? SizedBox(
                 width: 18,
                 height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2.4),
+                child: _BouncingDots(
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onSecondary,
+                ),
               )
             : Icon(running ? Icons.stop : Icons.play_arrow),
         label: Text(label, style: const TextStyle(fontSize: 16)),
@@ -1601,6 +1604,76 @@ class _TitleBarButton extends StatelessWidget {
                   ).colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// Lightweight loading indicator for in-button use. Three dots animate via
+// Transform.translate + Opacity only — no Canvas redraw per frame, so it
+// stays smooth on devices where the Material CircularProgressIndicator
+// stutters (notably 120Hz Android in debug).
+class _BouncingDots extends StatefulWidget {
+  final double size;
+  final Color color;
+  const _BouncingDots({required this.size, required this.color});
+
+  @override
+  State<_BouncingDots> createState() => _BouncingDotsState();
+}
+
+class _BouncingDotsState extends State<_BouncingDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dotSize = widget.size / 4.5;
+    final amp = widget.size / 5;
+    return SizedBox(
+      width: widget.size,
+      height: widget.size,
+      child: AnimatedBuilder(
+        animation: _ctrl,
+        builder: (context, _) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: List.generate(3, (i) {
+              final phase = (_ctrl.value - i * 0.18) % 1.0;
+              // Parabolic hop in the first half of each cycle, rest in second.
+              final t = (phase * 2.0).clamp(0.0, 1.0);
+              final y = -amp * 4 * t * (1 - t);
+              final alpha = 0.55 + 0.45 * (1 - (t - 0.5).abs() * 2);
+              return Transform.translate(
+                offset: Offset(0, y),
+                child: Container(
+                  width: dotSize,
+                  height: dotSize,
+                  decoration: BoxDecoration(
+                    color: widget.color.withValues(alpha: alpha),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              );
+            }),
+          );
+        },
       ),
     );
   }
