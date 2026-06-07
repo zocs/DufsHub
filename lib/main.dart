@@ -154,17 +154,12 @@ class _DufsHubAppState extends State<DufsHubApp> with TrayListener, WindowListen
 
   @override
   void onWindowClose() async {
-    debugPrint('onWindowClose called, action=${widget.config.closeAction}');
-    final action = widget.config.closeAction;
-    switch (action) {
-      case 'exit':
-        windowManager.destroy();
-        break;
-      case 'tray':
-        windowManager.hide();
-        break;
-      default: // 'ask' — handled by HomePage's close button callback
-        break;
+    // HomePage owns the close flow (close-action dialog + clean server
+    // shutdown) and registers its own WindowListener once mounted. Before setup
+    // completes HomePage isn't shown, so handle the close here as a fallback;
+    // otherwise defer to HomePage to avoid double-handling the event.
+    if (!_setupDone) {
+      await windowManager.destroy();
     }
   }
 

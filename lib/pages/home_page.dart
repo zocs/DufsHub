@@ -147,6 +147,14 @@ class _HomePageState extends State<HomePage>
     return '$user:$pass';
   }
 
+  @override
+  void onWindowClose() {
+    // Desktop OS-level close (Alt+F4 / window-manager close button) routes
+    // through the same close-action flow as the custom title-bar button.
+    // setPreventClose is on, so the window stays open until _handleClose acts.
+    _handleClose();
+  }
+
   Future<void> _handleClose() async {
     final service = context.read<DufsService>();
     final action = _config.closeAction;
@@ -1158,6 +1166,11 @@ class _HomePageState extends State<HomePage>
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: TextField(
                 controller: _usernameController,
+                // dufs parses --auth as user:pass@path:perms, so ':' and '@'
+                // in the username would corrupt the credential/path split.
+                inputFormatters: [
+                  FilteringTextInputFormatter.deny(RegExp(r'[:@]')),
+                ],
                 decoration: InputDecoration(
                   labelText: l10n.t('home.username'),
                   prefixIcon: const Icon(Icons.person),
@@ -1171,6 +1184,11 @@ class _HomePageState extends State<HomePage>
               child: TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
+                // '@' separates the credential from the path in dufs --auth, so
+                // deny it in the password to avoid corrupting the rule parse.
+                inputFormatters: [
+                  FilteringTextInputFormatter.deny(RegExp('@')),
+                ],
                 decoration: InputDecoration(
                   labelText: l10n.t('home.password'),
                   prefixIcon: const Icon(Icons.lock),
