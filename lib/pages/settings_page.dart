@@ -52,6 +52,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _checkStorage() async {
     try {
       final granted = await _ch.invokeMethod<bool>('isStorageGranted') ?? false;
+      if (!mounted) return;
       setState(() => _cachedStorageGranted = granted);
     } catch (_) {}
   }
