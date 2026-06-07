@@ -326,6 +326,7 @@ class DufsService extends ChangeNotifier {
           'port': actualPort,
           'path': config.path,
           'args': args,
+          'lang': config.language,
         });
         // Poll service status. Kotlin side runs a TCP-connect probe that can
         // take up to ~5s on slow devices; a fixed 500ms wait races with that
@@ -657,6 +658,12 @@ class DufsService extends ChangeNotifier {
 
   @override
   void dispose() {
+    // Cancel the log-file poll timer before anything else: otherwise it can
+    // fire after dispose and call notifyListeners() on a disposed
+    // ChangeNotifier ("A ChangeNotifier was used after being disposed").
+    // stopServer() cancels it too, but dispose() can run without a prior stop.
+    _logFileTimer?.cancel();
+    _logFileTimer = null;
     if (_useFfi && _dufsFfi.isLoaded) {
       try {
         _dufsFfi.stop();
