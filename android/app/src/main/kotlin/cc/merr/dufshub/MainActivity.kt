@@ -62,10 +62,12 @@ class MainActivity : FlutterActivity() {
                     val port = call.argument<Int>("port") ?: 0
                     val path = call.argument<String>("path") ?: ""
                     val args = call.argument<List<String>>("args")?.toTypedArray() ?: emptyArray()
+                    val lang = call.argument<String>("lang") ?: "en"
                     val intent = Intent(this, DufsForegroundService::class.java)
                     intent.putExtra("port", port)
                     intent.putExtra("path", path)
                     intent.putExtra("args", args)
+                    intent.putExtra("lang", lang)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         startForegroundService(intent)
                     } else {
