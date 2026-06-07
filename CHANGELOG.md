@@ -3,7 +3,19 @@
 > 所有版本均可在 [GitHub Releases](https://github.com/zocs/dufshub/releases) 下载。
 > All versions available at [GitHub Releases](https://github.com/zocs/dufshub/releases).
 
-## Unreleased
+## [v0.4.1](https://github.com/zocs/dufshub/releases/tag/v0.4.1) (2026-05-27)
+
+**中文：**
+- ✨ 启动/停止按钮内的 loading 指示器换成自定义三点跳动动画：Material 的 `CircularProgressIndicator` 每帧重绘整个 `Canvas.drawArc`，在 120Hz debug build 上肉眼可见卡顿；新组件只平移 `Offset`+`Opacity`，任何刷新率都顺滑。
+- 💅 Splash 文字字号从 48 缩到 24（letterSpacing 4→2），让 Flutter splash 与 native bitmap splash（186×24px @ mdpi）起手视觉一致，消除 Flutter 接管 native 窗口时「突然变大」的跳帧。
+
+**English:**
+- ✨ Replaced the start/stop button's loading indicator with a custom three-dot bouncer: Material's `CircularProgressIndicator` redraws a full `Canvas.drawArc` every frame and visibly stutters at 120Hz in debug builds; the new widget only translates `Offset`+`Opacity`, so it stays smooth at any refresh rate.
+- 💅 Shrank splash text from fontSize 48 to 24 (letterSpacing 4→2) so the Flutter splash starts visually identical to the native bitmap splash (186×24px @ mdpi), removing the "pop bigger" frame when Flutter takes over from the native window.
+
+---
+
+## [v0.4.0](https://github.com/zocs/dufshub/releases/tag/v0.4.0) (2026-05-27)
 
 **中文：**
 - 🏷️ **项目改名：`inout` → `DufsHub`**（applicationId 由 `cc.merr.inout` 改为 `cc.merr.dufshub`）。这是 breaking change——老版本无法直接 OTA 升级，需要卸载老版本后安装新版本。
