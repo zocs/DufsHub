@@ -5,7 +5,7 @@
 #
 # Builds dufs as a cdylib (shared library) for FFI embedding in Flutter.
 # The output is a .so / .dll / .dylib that exposes dufs_start / dufs_stop / dufs_is_running.
-set -e
+set -euo pipefail
 
 DUFS_VERSION="v0.45.0-fix2"
 DUFS_REPO="https://github.com/zocs/dufs.git"
@@ -26,7 +26,17 @@ fi
 
 # Clone dufs source
 DUFS_SRC="/tmp/dufs-src-${DUFS_VERSION}"
-if [ ! -d "$DUFS_SRC" ]; then
+# Reuse a cached checkout only if it's a complete clone of the pinned ref. A
+# partial tree from an interrupted run (or a corrupt one) must be re-cloned,
+# otherwise it gets silently reused and the build fails in confusing ways. The
+# tree is intentionally dirtied later by the FFI shim copy, so require only a
+# valid HEAD + Cargo.toml here, not a clean working tree.
+if [ -d "$DUFS_SRC/.git" ] \
+   && git -C "$DUFS_SRC" rev-parse --verify -q HEAD >/dev/null 2>&1 \
+   && [ -f "$DUFS_SRC/Cargo.toml" ]; then
+  echo "Reusing cached dufs checkout: $DUFS_SRC"
+else
+  rm -rf "$DUFS_SRC"
   git clone --depth 1 --branch "$DUFS_VERSION" "$DUFS_REPO" "$DUFS_SRC"
 fi
 
@@ -57,9 +67,9 @@ case "$PLATFORM" in
 
     command -v rustup >/dev/null 2>&1 && rustup target add "$RUST_TARGET"
 
-    if [ -n "$ANDROID_NDK_HOME" ]; then
+    if [ -n "${ANDROID_NDK_HOME:-}" ]; then
       NDK="$ANDROID_NDK_HOME"
-    elif [ -n "$ANDROID_HOME" ]; then
+    elif [ -n "${ANDROID_HOME:-}" ]; then
       NDK=$(find "$ANDROID_HOME/ndk" -maxdepth 1 -type d | sort -V | tail -1)
     else
       echo "ERROR: ANDROID_NDK_HOME or ANDROID_NDK_HOME must be set"
