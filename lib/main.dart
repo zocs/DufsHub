@@ -106,7 +106,10 @@ class _DufsHubAppState extends State<DufsHubApp> with TrayListener, WindowListen
       final icoBytes = await assetBundle.load('assets/icon/tray_icon.ico');
       final pngBytes = await assetBundle.load('assets/icon/app_icon.png');
       if (!mounted) return;
-      final dir = await Directory.systemTemp.createTemp('dufshub_tray');
+      // Reuse a stable temp dir; createTemp() leaks a fresh dufshub_trayXXXXXX
+      // directory on every launch.
+      final dir = Directory('${Directory.systemTemp.path}/dufshub_tray');
+      await dir.create(recursive: true);
       if (Platform.isWindows) {
         final iconFile = File('${dir.path}/tray_icon.ico');
         await iconFile.writeAsBytes(icoBytes.buffer.asUint8List());
