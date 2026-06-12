@@ -3,6 +3,24 @@
 > 所有版本均可在 [GitHub Releases](https://github.com/zocs/dufshub/releases) 下载。
 > All versions available at [GitHub Releases](https://github.com/zocs/dufshub/releases).
 
+## [v0.4.2](https://github.com/zocs/dufshub/releases/tag/v0.4.2) (2026-06-12)
+
+**中文：**
+- 🔒 增强账号密码安全：修复密码在特定情况下可能被记录到系统日志，并限制了会导致登录认证出错的特殊字符。
+- 🐛 提升运行稳定性，避免个别请求出错导致应用 / 服务整体崩溃。
+- 🐛 Android 通知栏文案现在跟随应用内的语言设置。
+- 🐛 桌面端：通过系统方式（如 Alt+F4）关闭窗口时，现在也会遵循「关闭行为」设置。
+- 🐛 桌面端：修复每次启动残留临时文件的问题。
+
+**English:**
+- 🔒 Hardened account/password security: fixed the password possibly being written to system logs, and restricted special characters that could break login.
+- 🐛 Improved stability so a single failing request no longer crashes the whole app / server.
+- 🐛 The Android notification text now follows the in-app language setting.
+- 🐛 Desktop: closing the window via the system (e.g. Alt+F4) now also respects your "close action" setting.
+- 🐛 Desktop: fixed leftover temporary files accumulating on each launch.
+
+---
+
 ## [v0.4.1](https://github.com/zocs/dufshub/releases/tag/v0.4.1) (2026-05-27)
 
 **中文：**
