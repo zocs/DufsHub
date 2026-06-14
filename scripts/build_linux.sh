@@ -1,6 +1,6 @@
 #!/bin/bash
 # build_linux.sh - Build and package DufsHub for Linux
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ARCH=${1:-x86_64}

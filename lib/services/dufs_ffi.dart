@@ -80,10 +80,27 @@ Future<String> resolveDufsLibPath() async {
     if (exeDir.contains('.mount_')) {
       final sourceFile = File(libPath);
       final stat = await sourceFile.stat();
+      // Key the extracted copy by the source mtime only (not pid) so it is
+      // reused across launches instead of leaking one .so per run, and sweep
+      // older copies first. Unlinking a copy a running instance still has
+      // mapped is safe on Linux — the inode persists for that process.
       final tmpLib = p.join(
         Directory.systemTemp.path,
-        'dufshub-libdufs-${stat.modified.millisecondsSinceEpoch}-$pid.so',
+        'dufshub-libdufs-${stat.modified.millisecondsSinceEpoch}.so',
       );
+      try {
+        await for (final e in Directory.systemTemp.list()) {
+          final name = p.basename(e.path);
+          if (e is File &&
+              name.startsWith('dufshub-libdufs-') &&
+              name.endsWith('.so') &&
+              e.path != tmpLib) {
+            try {
+              await e.delete();
+            } catch (_) {}
+          }
+        }
+      } catch (_) {}
       final tmpFile = File(tmpLib);
       if (!await tmpFile.exists()) {
         await sourceFile.copy(tmpLib);

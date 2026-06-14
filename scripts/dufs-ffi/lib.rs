@@ -46,72 +46,87 @@ static SHUTDOWN_TX: Mutex<Option<broadcast::Sender<()>>> = Mutex::new(None);
 /// Returns 0 on success, -1 on error.
 #[no_mangle]
 pub extern "C" fn dufs_start(argc: i32, argv: *const *const c_char) -> i32 {
-    let argv_vec = unsafe {
-        if argc < 0 || argv.is_null() {
-            return -1;
-        }
-        let argc = argc as isize;
-        let mut out = Vec::with_capacity(argc as usize);
-        for i in 0..argc {
-            let ptr = *argv.offset(i);
-            if ptr.is_null() {
+    // Never let a panic unwind across the C ABI boundary. This cdylib is built
+    // with panic="unwind" (Cargo.toml [profile.release]); catch_unwind converts
+    // any panic in the startup path into a clean -1 instead of aborting the
+    // host application (Flutter on desktop, the foreground Service on Android).
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let argv_vec = unsafe {
+            if argc < 0 || argv.is_null() {
                 return -1;
             }
-            match CStr::from_ptr(ptr).to_str() {
-                Ok(s) => out.push(s.to_owned()),
-                Err(_) => return -1,
+            let argc = argc as isize;
+            let mut out = Vec::with_capacity(argc as usize);
+            for i in 0..argc {
+                let ptr = *argv.offset(i);
+                if ptr.is_null() {
+                    return -1;
+                }
+                match CStr::from_ptr(ptr).to_str() {
+                    Ok(s) => out.push(s.to_owned()),
+                    Err(_) => return -1,
+                }
+            }
+            out
+        };
+
+        match start_inner(&argv_vec) {
+            Ok(_) => 0,
+            Err(e) => {
+                eprintln!("[dufs-ffi] Failed to start: {e}");
+                -1
             }
         }
-        out
-    };
-
-    match start_inner(&argv_vec) {
-        Ok(_) => 0,
-        Err(e) => {
-            eprintln!("[dufs-ffi] Failed to start: {e}");
-            -1
-        }
-    }
+    }));
+    result.unwrap_or_else(|_| {
+        eprintln!("[dufs-ffi] panic during start (caught, returning -1)");
+        -1
+    })
 }
 
 /// Stop the dufs server gracefully.
 #[no_mangle]
 pub extern "C" fn dufs_stop() {
-    if let Ok(mut guard) = RUNNING.lock() {
-        if let Some(ref running) = *guard {
-            running.store(false, Ordering::SeqCst);
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        if let Ok(mut guard) = RUNNING.lock() {
+            if let Some(ref running) = *guard {
+                running.store(false, Ordering::SeqCst);
+            }
         }
-    }
-    // Wake up all blocking accept() calls
-    if let Ok(mut guard) = SHUTDOWN_TX.lock() {
-        if let Some(ref tx) = *guard {
-            let _ = tx.send(());
+        // Wake up all blocking accept() calls
+        if let Ok(mut guard) = SHUTDOWN_TX.lock() {
+            if let Some(ref tx) = *guard {
+                let _ = tx.send(());
+            }
         }
-    }
-    // Drop runtime to release all resources (listeners, sockets, etc.)
-    if let Ok(mut guard) = RUNTIME.lock() {
-        *guard = None;
-    }
-    // Clear statics for next start
-    if let Ok(mut guard) = RUNNING.lock() {
-        *guard = None;
-    }
-    if let Ok(mut guard) = SHUTDOWN_TX.lock() {
-        *guard = None;
-    }
+        // Drop runtime to release all resources (listeners, sockets, etc.)
+        if let Ok(mut guard) = RUNTIME.lock() {
+            *guard = None;
+        }
+        // Clear statics for next start
+        if let Ok(mut guard) = RUNNING.lock() {
+            *guard = None;
+        }
+        if let Ok(mut guard) = SHUTDOWN_TX.lock() {
+            *guard = None;
+        }
+    }));
 }
 
 /// Check if the server is running. Returns 1 if running, 0 if not.
 #[no_mangle]
 pub extern "C" fn dufs_is_running() -> i32 {
-    if let Ok(guard) = RUNNING.lock() {
-        if let Some(ref running) = *guard {
-            if running.load(Ordering::SeqCst) {
-                return 1;
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        if let Ok(guard) = RUNNING.lock() {
+            if let Some(ref running) = *guard {
+                if running.load(Ordering::SeqCst) {
+                    return 1;
+                }
             }
         }
-    }
-    0
+        0
+    }))
+    .unwrap_or(0)
 }
 
 fn start_inner(argv: &[String]) -> Result<()> {

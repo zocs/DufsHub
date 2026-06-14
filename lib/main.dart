@@ -106,7 +106,10 @@ class _DufsHubAppState extends State<DufsHubApp> with TrayListener, WindowListen
       final icoBytes = await assetBundle.load('assets/icon/tray_icon.ico');
       final pngBytes = await assetBundle.load('assets/icon/app_icon.png');
       if (!mounted) return;
-      final dir = await Directory.systemTemp.createTemp('dufshub_tray');
+      // Reuse a stable temp dir; createTemp() leaks a fresh dufshub_trayXXXXXX
+      // directory on every launch.
+      final dir = Directory('${Directory.systemTemp.path}/dufshub_tray');
+      await dir.create(recursive: true);
       if (Platform.isWindows) {
         final iconFile = File('${dir.path}/tray_icon.ico');
         await iconFile.writeAsBytes(icoBytes.buffer.asUint8List());
@@ -154,17 +157,12 @@ class _DufsHubAppState extends State<DufsHubApp> with TrayListener, WindowListen
 
   @override
   void onWindowClose() async {
-    debugPrint('onWindowClose called, action=${widget.config.closeAction}');
-    final action = widget.config.closeAction;
-    switch (action) {
-      case 'exit':
-        windowManager.destroy();
-        break;
-      case 'tray':
-        windowManager.hide();
-        break;
-      default: // 'ask' — handled by HomePage's close button callback
-        break;
+    // HomePage owns the close flow (close-action dialog + clean server
+    // shutdown) and registers its own WindowListener once mounted. Before setup
+    // completes HomePage isn't shown, so handle the close here as a fallback;
+    // otherwise defer to HomePage to avoid double-handling the event.
+    if (!_setupDone) {
+      await windowManager.destroy();
     }
   }
 

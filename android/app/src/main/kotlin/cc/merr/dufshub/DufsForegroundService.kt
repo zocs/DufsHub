@@ -44,6 +44,7 @@ class DufsForegroundService : Service() {
         val port = intent?.getIntExtra("port", 0) ?: 0
         val path = intent?.getStringExtra("path") ?: ""
         val args = intent?.getStringArrayExtra("args") ?: emptyArray()
+        val lang = intent?.getStringExtra("lang") ?: "en"
 
         if (port == 0 || path.isEmpty()) {
             Log.w(TAG, "Invalid start request: port=$port path=$path")
@@ -59,7 +60,7 @@ class DufsForegroundService : Service() {
 
             killDufs()
 
-            val notification = buildNotification(port, path)
+            val notification = buildNotification(port, path, lang)
             // Android 14+ (API 34) requires the 3-arg startForeground with an
             // explicit service type; the manifest already declares
             // android:foregroundServiceType="dataSync". Calling the 2-arg
@@ -135,7 +136,13 @@ class DufsForegroundService : Service() {
 
             val ready = waitForServerReady(port)
             if (!ready) {
-                val errOutput = try { errLog.readText().take(500) } catch (_: Exception) { "" }
+                // Scrub the --auth credential from dufs's own stderr before it
+                // is surfaced to logcat / the UI: clap echoes offending args on
+                // a parse error, and the arg-log redaction above doesn't cover
+                // dufs's own output.
+                val authVal = fullArgs.zipWithNext().firstOrNull { it.first == "--auth" }?.second
+                var errOutput = try { errLog.readText().take(500) } catch (_: Exception) { "" }
+                if (!authVal.isNullOrEmpty()) errOutput = errOutput.replace(authVal, "***@/:rw")
                 val alive = isProcessAlive()
                 lastError = if (!alive) {
                     "dufs process exited during startup${if (errOutput.isNotEmpty()) ": $errOutput" else ""}"
@@ -226,7 +233,11 @@ class DufsForegroundService : Service() {
                 "DufsHub Server",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "DufsHub 文件分享服务运行中"
+                // Channel name/description show only in system Settings, which
+                // follow device locale (not the in-app language), so keep them
+                // neutral English. The notification itself is localized per the
+                // in-app language in buildNotification().
+                description = "DufsHub file-sharing service"
                 setShowBadge(false)
             }
             val manager = getSystemService(NotificationManager::class.java)
@@ -234,7 +245,7 @@ class DufsForegroundService : Service() {
         }
     }
 
-    private fun buildNotification(port: Int, path: String): Notification {
+    private fun buildNotification(port: Int, path: String, lang: String): Notification {
         val intent = packageManager.getLaunchIntentForPackage(packageName)
         val pendingIntent = PendingIntent.getActivity(
             this, 0, intent,
@@ -248,9 +259,19 @@ class DufsForegroundService : Service() {
             Notification.Builder(this)
         }
 
+        // The in-app language is a user setting independent of device locale, so
+        // localize the user-visible notification here (passed in via the start
+        // intent) rather than via Android string resources, which key off the
+        // device locale.
+        val (title, text) = when (lang) {
+            "zh" -> "DufsHub 文件分享" to "服务运行中（端口 $port）"
+            "zhTW" -> "DufsHub 檔案分享" to "服務運行中（連接埠 $port）"
+            else -> "DufsHub File Sharing" to "Running (port $port)"
+        }
+
         return builder
-            .setContentTitle("DufsHub 文件分享")
-            .setContentText("服务运行中 (端口 $port)")
+            .setContentTitle(title)
+            .setContentText(text)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
