@@ -307,29 +307,35 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
+      # checkout first: it cleans the workspace, so it must run before the
+      # artifacts are downloaded. Needed for CHANGELOG.md + the release footer.
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
       - name: List artifacts
         run: find artifacts -type f
+      - name: Build release notes
+        run: |
+          # Curated, user-facing notes for this tag from CHANGELOG.md, then the
+          # platform/build footer. generate_release_notes below appends the
+          # auto commit list under this body.
+          ver="${{ github.ref_name }}"
+          {
+            awk -v ver="$ver" '
+              index($0, "## [" ver "]")==1 {cap=1; next}
+              cap && (/^## \[/ || /^---[[:space:]]*$/) {exit}
+              cap {print}
+            ' CHANGELOG.md | sed -e '/./,$!d'
+            echo
+            cat .github/release_body_footer.md
+          } > release_body.md
+          echo "----- release_body.md -----"
+          cat release_body.md
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
-          body: |
-            🤖 **Automated build & release by GitHub Actions** | **此版本由 GitHub Actions 自动化构建并发布**
-
-            > All native binaries (dufs) are compiled from source — F-Droid compatible.
-
-            | Platform | Files | Status |
-            |----------|-------|--------|
-            | Android arm64 | `.apk` | ✅ |
-            | Windows x64 | `.zip` (portable) + `.exe` (installer) | ✅ |
-            | Linux x64 | `.AppImage` + `.deb` + `.tar.gz` | ✅ |
-            | Linux ARM64 | `.AppImage` + `.deb` + `.tar.gz` | ✅ |
-            | macOS ARM64 | `.zip` (app bundle) | ⚠️ 仅编译测试，**未签名、未实机测试** |
-            | iOS arm64 | `.zip` (app bundle, no codesign) | ⚠️ 仅编译测试，**未签名、未实机测试** |
-
-            > 🍎 macOS 未签名：解压后执行 `xattr -cr DufsHub.app` 去除隔离属性。
+          body_path: release_body.md
           files: |
             artifacts/**/*.AppImage
             artifacts/**/*.deb
