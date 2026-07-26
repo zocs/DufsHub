@@ -3,6 +3,24 @@
 > 所有版本均可在 [GitHub Releases](https://github.com/zocs/dufshub/releases) 下载。
 > All versions available at [GitHub Releases](https://github.com/zocs/dufshub/releases).
 
+## Unreleased
+
+**中文：**
+- ⚡ 大幅减少传输过程中的界面卡顿：活动日志改为批量刷新，二维码不再随统计数字变化反复重绘。
+- ⚡ 桌面端：停止服务不再卡住界面（服务在后台收尾）。
+- 🐛 桌面端：修复高负载下下载可能被提前截断/重置的问题（Windows 上尤为明显）。
+- 🐛 修改权限前的「重启服务」确认框，现在只在最近 15 秒内有传输活动时弹出。
+- ⬆️ 内核 dufs 升级到 v0.46.0：带来上游多项修复与改进（认证逻辑修正、HTTP Range 修复、符号链接安全加固、HEAD 请求提速、可自定义 404 页面等）。
+
+**English:**
+- ⚡ Much smoother UI during transfers: activity-log updates are now batched, and the QR code no longer re-renders on every stats tick.
+- ⚡ Desktop: stopping the server no longer freezes the UI (shutdown finishes in the background).
+- 🐛 Desktop: fixed downloads possibly being cut short / reset under heavy load (most visible on Windows).
+- 🐛 The "restart server" confirmation before permission changes now only appears if there was transfer activity in the last 15 seconds.
+- ⬆️ Upgraded the dufs core to v0.46.0: brings many upstream fixes and improvements (auth-logic fixes, HTTP Range fix, symlink hardening, faster HEAD requests, customizable 404 page, and more).
+
+---
+
 ## [v0.4.2](https://github.com/zocs/dufshub/releases/tag/v0.4.2) (2026-06-12)
 
 **中文：**
