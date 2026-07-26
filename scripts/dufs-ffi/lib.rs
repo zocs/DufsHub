@@ -1,4 +1,4 @@
-﻿// lib.rs 鈥?FFI wrapper for dufs
+﻿// lib.rs — FFI wrapper for dufs
 // Exposes dufs_start / dufs_stop for embedding in Flutter (dart:ffi)
 
 #[macro_use]
@@ -99,9 +99,16 @@ pub extern "C" fn dufs_stop() {
                 let _ = tx.send(());
             }
         }
-        // Drop runtime to release all resources (listeners, sockets, etc.)
+        // Shut the runtime down WITHOUT blocking this thread. dufs_stop is a
+        // synchronous FFI call from the Dart UI isolate; a plain drop here
+        // waits for in-flight blocking-pool work (tokio::fs reads run on the
+        // blocking pool) and for worker threads to wind down — freezing the
+        // UI for the duration. shutdown_background() releases listeners and
+        // sockets as tasks are dropped and lets the threads exit on their own.
         if let Ok(mut guard) = RUNTIME.lock() {
-            *guard = None;
+            if let Some(rt) = guard.take() {
+                rt.shutdown_background();
+            }
         }
         // Clear statics for next start
         if let Ok(mut guard) = RUNNING.lock() {
@@ -175,13 +182,12 @@ fn start_inner(argv: &[String]) -> Result<()> {
     })?;
     eprintln!("[dufs-ffi] Server started with {} listeners", _handles.len());
 
-    // Keep runtime alive 鈥?move it into static AFTER spawning tasks
-    // (RUNTIME is OnceLock, so we set it once)
+    // Keep the runtime alive — store it in the static AFTER spawning tasks.
     if let Ok(mut guard) = RUNTIME.lock() {
         *guard = Some(rt);
     }
     // Note: handles are now running on the stored runtime.
-    // We don't need to join them 鈥?they run until the process exits or running=false.
+    // We don't need to join them — they run until the process exits or running=false.
 
     // Monitor thread: poll running flag, print when stopped
     std::thread::spawn(move || {
@@ -292,8 +298,12 @@ fn create_listener(addr: SocketAddr) -> Result<TcpListener> {
         {
             let _ = socket.set_reuse_port(true);
         }
-        // Set linger=0 to avoid TIME_WAIT on close
-        let _ = socket.set_linger(Some(Duration::from_secs(0)));
+        // NOTE: deliberately NO SO_LINGER=0 here. On Windows accepted sockets
+        // inherit the listener's linger, and linger=0 turns every close into an
+        // abortive RST that discards unsent data — truncating the tail of
+        // in-flight downloads. TIME_WAIT rebinding (the reason linger=0 was
+        // originally set) is already covered three ways: SO_REUSEADDR above,
+        // this 8-attempt retry loop, and the Dart-side port bump fallback.
         match socket.bind(&addr.into()) {
             Ok(()) => {
                 socket.listen(1024)?;
