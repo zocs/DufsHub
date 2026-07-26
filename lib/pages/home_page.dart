@@ -610,9 +610,12 @@ class _HomePageState extends State<HomePage>
   /// Auto-restart if running with no active connections
   Future<void> _maybeRestart(DufsService service) async {
     if (!service.isRunning) return;
-    final hasConnections =
-        service.totalRequests > 0 && service.lastActivity != null;
-    if (hasConnections) {
+    // Only confirm before restarting if there was activity in the last 15s —
+    // i.e. a transfer is likely in progress. A lifetime request counter would
+    // pop the confirm dialog forever after any single past request.
+    final since = service.timeSinceLastActivity;
+    final recentlyActive = since != null && since < const Duration(seconds: 15);
+    if (recentlyActive) {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -807,11 +810,14 @@ class _HomePageState extends State<HomePage>
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: QrImageView(
-                data: service.serverUrl!,
-                version: QrVersions.auto,
-                size: 140,
-                backgroundColor: Colors.white,
+              child: Selector<DufsService, String?>(
+                selector: (_, s) => s.serverUrl,
+                builder: (_, url, _) => QrImageView(
+                  data: url ?? '',
+                  version: QrVersions.auto,
+                  size: 140,
+                  backgroundColor: Colors.white,
+                ),
               ),
             ),
             const SizedBox(height: 8),
