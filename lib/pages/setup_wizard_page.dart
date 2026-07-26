@@ -71,7 +71,7 @@ class _SetupWizardPageState extends State<SetupWizardPage> {
                       ),
                 ),
                 Text(
-                  _label('轻点一下，文件分享即刻在线。', '輕點一下，檔案分享即刻在線。', 'In and out, that\'s all.'),
+                  _label('轻点一下，文件分享即刻在线。', '輕點一下，檔案分享即刻在線。', 'One tap, and your files are online.'),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.outline,
                       ),
