@@ -3,7 +3,7 @@
 > 所有版本均可在 [GitHub Releases](https://github.com/zocs/dufshub/releases) 下载。
 > All versions available at [GitHub Releases](https://github.com/zocs/dufshub/releases).
 
-## Unreleased
+## [v0.4.3](https://github.com/zocs/dufshub/releases/tag/v0.4.3) (2026-07-31)
 
 **中文：**
 - ⚡ 大幅减少传输过程中的界面卡顿：活动日志改为批量刷新，二维码不再随统计数字变化反复重绘。
