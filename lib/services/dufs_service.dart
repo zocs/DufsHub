@@ -27,6 +27,7 @@ class DufsService extends ChangeNotifier {
   String? _error;
   int _totalRequests = 0;
   String? _lastActivity;
+  DateTime? _lastActivityAt;
   List<String> _allAddresses = [];
 
   /// 网卡名称列表，与 allAddresses 一一对应
@@ -50,6 +51,11 @@ class DufsService extends ChangeNotifier {
   int get activePort => _activePort;
   int get totalRequests => _totalRequests;
   String? get lastActivity => _lastActivity;
+  /// Time since the last parsed request, or null if none yet. Lets the UI
+  /// tell "transfer likely in progress" from "idle after a past request".
+  Duration? get timeSinceLastActivity => _lastActivityAt == null
+      ? null
+      : DateTime.now().difference(_lastActivityAt!);
   List<String> get allAddresses => _allAddresses;
   List<String> get allInterfaceNames => _allInterfaceNames;
   List<TransferLog> get transferLogs => List.unmodifiable(_transferLogs);
@@ -184,60 +190,19 @@ class DufsService extends ChangeNotifier {
     }
   }
 
-  /// 清理可能残留的 dufs 孤儿进程（占用了目标端口的）
+  /// 清理可能残留的 dufs 孤儿进程（占用了目标端口的）。
+  /// 仅 Android 有意义：桌面走 FFI（进程内，无孤儿进程），iOS 无法这样杀子进程。
+  /// (The old Windows/macOS/Linux branches were dead: `_useFfi` covers all three
+  /// desktop platforms and returns above, so only the Android path ever ran.)
   Future<void> _killOrphanDufs(int port) async {
-    // FFI 模式下 dufs 运行在进程内，无需清理孤儿进程
-    if (_useFfi) return;
+    if (_useFfi) return; // desktop: dufs runs in-process, no orphan to kill
+    if (!Platform.isAndroid) return; // iOS: can't kill the child this way
     try {
-      if (Platform.isWindows) {
-        final result = await Process.run('netstat', ['-ano', '-p', 'TCP']);
-        final lines = (result.stdout as String).split('\n');
-        for (final line in lines) {
-          if (line.contains(':$port ') && line.contains('LISTENING')) {
-            final parts = line.trim().split(RegExp(r'\s+'));
-            final pid = int.tryParse(parts.last);
-            if (pid != null) {
-              final taskResult = await Process.run('tasklist', [
-                '/FI',
-                'PID eq $pid',
-                '/FO',
-                'CSV',
-              ]);
-              final output = taskResult.stdout as String;
-              if (output.toLowerCase().contains('dufs')) {
-                _log('Killing orphan dufs process PID=$pid on port $port');
-                await Process.run('taskkill', ['/F', '/PID', '$pid']);
-              }
-            }
-          }
-        }
-      } else if (Platform.isAndroid) {
-        await Process.run('pkill', [
-          '-f',
-          'libdufs.so',
-        ]).catchError((_) => ProcessResult(0, 1, '', ''));
-      } else if (Platform.isMacOS || Platform.isLinux) {
-        final r = await Process.run('lsof', [
-          '-ti',
-          ':$port',
-        ]).catchError((_) => ProcessResult(0, 1, '', ''));
-        final pids = r.stdout.toString().trim().split('\n');
-        for (final pid in pids) {
-          if (pid.isEmpty) continue;
-          final cmd = await Process.run('ps', [
-            '-p',
-            pid,
-            '-o',
-            'comm=',
-          ]).catchError((_) => ProcessResult(0, 1, '', ''));
-          if (cmd.stdout.toString().toLowerCase().contains('dufs')) {
-            _log('Killing orphan dufs PID=$pid on port $port');
-            await Process.run('kill', [
-              pid,
-            ]).catchError((_) => ProcessResult(0, 1, '', ''));
-          }
-        }
-      }
+      await Process.run('pkill', [
+        '-f',
+        'libdufs.so',
+      ]).catchError((_) => ProcessResult(0, 1, '', ''));
+      _log('Cleaned up orphan dufs on port $port');
     } catch (e) {
       _log('Failed to kill orphan dufs: $e');
     }
@@ -495,19 +460,33 @@ class DufsService extends ChangeNotifier {
     await Future.delayed(const Duration(milliseconds: 300));
   }
 
-  /// 解析 dufs 输出行，更新请求计数和日志列表
-  void _trackActivity(String line) {
+  /// 解析 dufs 输出行，更新请求计数和日志列表。
+  ///
+  /// Returns true if state changed but does NOT notify — callers batch a single
+  /// [notifyListeners] after ingesting a whole chunk. A busy transfer logs
+  /// hundreds of lines per 2s poll; notifying per line rebuilt the entire home
+  /// page (QR matrix included) hundreds of times per frame — the main source of
+  /// desktop UI jank under load.
+  bool _ingestLine(String line) {
     final entry = TransferLog.parse(line);
-    if (entry == null) return;
+    if (entry == null) return false;
     _totalRequests++;
-    _lastActivity = DateTime.now().toIso8601String().substring(11, 19);
+    final now = DateTime.now();
+    _lastActivityAt = now;
+    _lastActivity = now.toIso8601String().substring(11, 19);
     if (_isFileTransfer(entry)) {
       _transferLogs.insert(0, entry);
       if (_transferLogs.length > 200) {
         _transferLogs.removeRange(200, _transferLogs.length);
       }
     }
-    notifyListeners();
+    return true;
+  }
+
+  /// Ingest one line and notify immediately. Used by the iOS stdout/stderr
+  /// stream path, where lines arrive one at a time anyway.
+  void _trackActivity(String line) {
+    if (_ingestLine(line)) notifyListeners();
   }
 
   bool _isFileTransfer(TransferLog entry) {
@@ -566,10 +545,12 @@ class DufsService extends ChangeNotifier {
         final lines = merged.split('\n');
         _logFileRemainder = endsWithNewline ? '' : lines.removeLast();
 
+        var changed = false;
         for (final line in lines) {
           final trimmed = line.trim();
-          if (trimmed.isNotEmpty) _trackActivity(trimmed);
+          if (trimmed.isNotEmpty && _ingestLine(trimmed)) changed = true;
         }
+        if (changed) notifyListeners();
       } finally {
         await raf.close();
       }
@@ -604,6 +585,7 @@ class DufsService extends ChangeNotifier {
     _activePort = 0;
     _totalRequests = 0;
     _lastActivity = null;
+    _lastActivityAt = null;
     _allAddresses = [];
     _allInterfaceNames = [];
     _transferLogs.clear();
@@ -626,6 +608,7 @@ class DufsService extends ChangeNotifier {
         await _prepareLogFile();
         _totalRequests = 0;
         _lastActivity = null;
+        _lastActivityAt = null;
         _transferLogs.clear();
         _localIp = await _getWifiIP();
         final allNet = await _getAllAddresses();

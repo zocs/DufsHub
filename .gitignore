@@ -67,3 +67,6 @@ CODE_REVIEW.md
 PROCEED.md
 docs/
 .workbuddy/
+
+# Claude Code machine-local settings
+.claude/settings.local.json

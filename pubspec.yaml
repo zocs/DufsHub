@@ -1,6 +1,6 @@
 name: dufs_hub
 description: "DufsHub - dufs 的多端中枢。轻点一下，文件分享即刻在线。"
-version: 0.4.2+42
+version: 0.4.3+43
 license: MIT
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
