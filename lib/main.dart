@@ -162,7 +162,9 @@ class _DufsHubAppState extends State<DufsHubApp> with TrayListener, WindowListen
     // completes HomePage isn't shown, so handle the close here as a fallback;
     // otherwise defer to HomePage to avoid double-handling the event.
     if (!_setupDone) {
-      await windowManager.destroy();
+      // exit(0) rather than windowManager.destroy() — see the tray 'quit' note.
+      // Pre-setup the server can't be running, so there's nothing to stop.
+      exit(0);
     }
   }
 
@@ -193,9 +195,14 @@ class _DufsHubAppState extends State<DufsHubApp> with TrayListener, WindowListen
         await windowManager.focus();
         break;
       case 'quit':
-        await trayManager.destroy();
-        await windowManager.destroy();
-        break;
+        // Exit hard on desktop: windowManager.destroy() can block ~30s on
+        // Windows waiting on the dufs runtime's lingering worker threads.
+        try {
+          await trayManager.destroy().timeout(
+            const Duration(milliseconds: 500),
+          );
+        } catch (_) {}
+        exit(0);
     }
   }
 
