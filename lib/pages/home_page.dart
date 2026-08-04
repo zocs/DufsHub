@@ -226,13 +226,20 @@ class _HomePageState extends State<HomePage>
         await service.stopServer();
       }, stopping: true);
     }
-    trayManager.destroy().catchError((_) {});
-    if (!mounted) return;
-    if (Theme.of(context).platform == TargetPlatform.android) {
+    if (Platform.isAndroid) {
       SystemNavigator.pop();
-    } else {
-      await windowManager.destroy();
+      return;
     }
+    // Desktop: terminate immediately. windowManager.destroy() has been observed
+    // to block ~30s on Windows while native teardown waits on the dufs runtime's
+    // lingering worker threads (server stop is intentionally non-blocking, so
+    // those threads wind down in the background). Config is already persisted;
+    // exit(0) closes instantly. Bound the tray cleanup so it can't reintroduce
+    // the hang, and so the icon doesn't ghost until hover.
+    try {
+      await trayManager.destroy().timeout(const Duration(milliseconds: 500));
+    } catch (_) {}
+    exit(0);
   }
 
   Future<void> _pickDirectory() async {
