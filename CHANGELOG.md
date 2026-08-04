@@ -3,6 +3,16 @@
 > 所有版本均可在 [GitHub Releases](https://github.com/zocs/dufshub/releases) 下载。
 > All versions available at [GitHub Releases](https://github.com/zocs/dufshub/releases).
 
+## [v0.4.4](https://github.com/zocs/dufshub/releases/tag/v0.4.4) (2026-08-04)
+
+**中文：**
+- 🐛 桌面端：修复关闭窗口（点右上角 X、Alt+F4 或托盘「退出」）后要等约 30 秒才真正关闭的问题，现在瞬间关闭。
+
+**English:**
+- 🐛 Desktop: fixed the app hanging ~30s before actually closing after you click the window's X (or Alt+F4, or tray Quit) — it now closes instantly.
+
+---
+
 ## [v0.4.3](https://github.com/zocs/dufshub/releases/tag/v0.4.3) (2026-07-31)
 
 **中文：**
