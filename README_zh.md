@@ -2,7 +2,7 @@
 
 <h1><img src="fastlane/metadata/android/en-US/icon.png" width="48" align="absmiddle"> DufsHub</h1>
 
-**dufs 的多端中枢。** — 局域网/工业离线场景下的轻量文件分发 GUI。
+**让文件分发更轻松。** — 局域网/工业离线场景下的轻量文件快速分发工具。
 
 [![Release](https://img.shields.io/github/v/release/zocs/dufshub)](https://github.com/zocs/dufshub/releases)
 [![License](https://img.shields.io/github/license/zocs/dufshub)](LICENSE)
@@ -270,6 +270,6 @@ DufsHub 基于 [dufs](https://github.com/sigoden/dufs) 构建——[sigoden](htt
 
 <div align="center">
 
-**DufsHub** — dufs 的多端中枢。
+**DufsHub** — 让文件分发更轻松。
 
 </div>

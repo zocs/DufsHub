@@ -1,1 +1,1 @@
-The hub for dufs — one-tap LAN file sharing via browser
+One-tap LAN file sharing — the other device only needs a browser

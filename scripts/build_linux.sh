@@ -53,7 +53,7 @@ cp -r "${PKG_DIR}/"* "${APPDIR}/usr/bin/"
 cat > "${APPDIR}/${APP_NAME}.desktop" << 'DESKTOP'
 [Desktop Entry]
 Name=DufsHub
-Comment=The hub for dufs.
+Comment=One-tap LAN file sharing via browser
 Exec=dufshub
 Icon=dufshub
 Type=Application
@@ -109,7 +109,7 @@ Priority: optional
 Architecture: ${DEB_ARCH}
 Depends: libgtk-3-0, libglib2.0-0
 Maintainer: zocs <zocs@live.com>
-Description: The hub for dufs.
+Description: One-tap LAN file sharing via browser
  A Dufs-based, lightweight cross-platform file distribution GUI optimized
  for air-gapped LANs and restricted industrial environments.
 CONTROL
@@ -135,7 +135,7 @@ chmod 755 "${DEB_DIR}/DEBIAN/prerm"
 cat > "${DEB_DIR}/usr/share/applications/${APP_NAME}.desktop" << 'DESKTOP'
 [Desktop Entry]
 Name=DufsHub
-Comment=The hub for dufs.
+Comment=One-tap LAN file sharing via browser
 Exec=/opt/dufshub/dufshub
 Icon=utilities-terminal
 Type=Application
@@ -157,7 +157,7 @@ if command -v rpmbuild &> /dev/null; then
 Name: ${APP_NAME}
 Version: ${VERSION}
 Release: 1
-Summary: The hub for dufs.
+Summary: One-tap LAN file sharing via browser
 License: MIT
 Requires: gtk3 glib2
 

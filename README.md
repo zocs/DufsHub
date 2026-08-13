@@ -2,7 +2,7 @@
 
 <h1><img src="fastlane/metadata/android/en-US/icon.png" width="48" align="absmiddle"> DufsHub</h1>
 
-**The hub for dufs.** — dufs 的多端中枢。
+**File sharing made easy.** — 让文件分发更轻松。
 
 [![Release](https://img.shields.io/github/v/release/zocs/dufshub)](https://github.com/zocs/dufshub/releases)
 [![License](https://img.shields.io/github/license/zocs/dufshub)](LICENSE)
@@ -293,6 +293,6 @@ DufsHub is built on top of [dufs](https://github.com/sigoden/dufs) — a brillia
 
 <div align="center">
 
-**DufsHub** — the hub for dufs.
+**DufsHub** — file sharing made easy.
 
 </div>

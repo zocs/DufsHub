@@ -10,7 +10,7 @@ class AppLocalizations {
   static const Map<String, Map<String, String>> _translations = {
     'zh': {
       'app.name': 'DufsHub',
-      'app.slogan': 'dufs 的多端中枢。',
+      'app.slogan': '让文件分发更轻松。',
       'nav.home': '首页',
       'nav.settings': '设置',
       'home.selectDir': '选择分享目录',
@@ -89,7 +89,7 @@ class AppLocalizations {
       'settings.closeAsk': '每次询问',
       'settings.closeTray': '最小化到托盘',
       'settings.closeExit': '直接退出',
-      'about.description': '基于开源项目 dufs 开发的图形界面版本，让文件分享零配置、零门槛。',
+      'about.description': '更友好的文件分发工具，让文件分享零配置、零门槛。',
       'about.privacy': '隐私政策',
       'about.license': '开源许可',
       'privacy.content':
@@ -103,7 +103,7 @@ class AppLocalizations {
     },
     'en': {
       'app.name': 'DufsHub',
-      'app.slogan': 'The hub for dufs.',
+      'app.slogan': 'File sharing made easy.',
       'nav.home': 'Home',
       'nav.settings': 'Settings',
       'home.selectDir': 'Select Share Directory',
@@ -190,7 +190,7 @@ class AppLocalizations {
       'settings.closeTray': 'Minimize to tray',
       'settings.closeExit': 'Exit directly',
       'about.description':
-          'A graphical interface built on the open-source project dufs, making file sharing zero-configuration and zero-barrier.',
+          'A friendly file-sharing tool — zero configuration, zero barrier.',
       'about.privacy': 'Privacy Policy',
       'about.license': 'Licenses',
       'privacy.content':
@@ -206,7 +206,7 @@ class AppLocalizations {
     },
     'zhTW': {
       'app.name': 'DufsHub',
-      'app.slogan': 'dufs 的多端中樞。',
+      'app.slogan': '讓檔案分發更輕鬆。',
       'nav.home': '首頁',
       'nav.settings': '設定',
       'home.selectDir': '選擇分享目錄',
@@ -285,7 +285,7 @@ class AppLocalizations {
       'settings.closeAsk': '每次詢問',
       'settings.closeTray': '最小化到系統匣',
       'settings.closeExit': '直接退出',
-      'about.description': '基於開源專案 dufs 開發的圖形介面版本，讓檔案分享零設定、零門檻。',
+      'about.description': '更友善的檔案分發工具，讓檔案分享零設定、零門檻。',
       'about.privacy': '隱私權政策',
       'about.license': '開源許可',
       'privacy.content':
