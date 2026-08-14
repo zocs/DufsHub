@@ -11,6 +11,13 @@ class SplashPage extends StatefulWidget {
 class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   late final AnimationController _ctrl;
 
+  // The real child (home/setup wizard) is deferred by one frame so the first
+  // visible frame only pays for the lightweight splash scaffold. The overlay
+  // Scaffold below stays fully opaque until the animation completes (1.4s),
+  // so mounting the child a frame later is invisible — it just moves the
+  // heavy build off the time-to-first-frame critical path.
+  bool _childMounted = false;
+
   @override
   void initState() {
     super.initState();
@@ -19,6 +26,10 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 1400),
     )..forward();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _childMounted = true);
+    });
   }
 
   @override
@@ -38,7 +49,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
     return Stack(
       children: [
-        widget.child,
+        if (_childMounted) widget.child else ColoredBox(color: bgColor),
         AnimatedBuilder(
           animation: _ctrl,
           builder: (context, _) {

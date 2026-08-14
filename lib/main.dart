@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
@@ -9,33 +10,63 @@ import 'app.dart';
 import 'models/server_config.dart';
 import 'services/dufs_service.dart';
 
+/// Startup tracing, enabled only when built with
+/// `--dart-define=STARTUP_TRACE=true`. Prints `[startup] +<ms> <label>` lines
+/// to stdout so time-to-first-frame regressions can be measured from a plain
+/// release binary. Compiled out entirely (const false) in normal builds.
+const bool _kTraceStartup = bool.fromEnvironment('STARTUP_TRACE');
+late final DateTime _startupEpoch;
+
+void _mark(String label) {
+  if (!_kTraceStartup) return;
+  // ignore: avoid_print
+  print(
+    '[startup] +${DateTime.now().difference(_startupEpoch).inMilliseconds}ms $label',
+  );
+}
+
 void main() async {
+  if (_kTraceStartup) {
+    _startupEpoch = DateTime.now();
+    // Absolute epoch lets an external launcher subtract its own launch
+    // timestamp to isolate engine/embedder init (everything before main).
+    // ignore: avoid_print
+    print('[startup] epoch=${_startupEpoch.millisecondsSinceEpoch}');
+  }
   WidgetsFlutterBinding.ensureInitialized();
+  _mark('binding initialized');
+
+  // Everything between here and runApp delays the first visible frame, so the
+  // startup path only awaits what the first frame truly needs: the config
+  // (theme/language/setupDone). The rest is kicked off concurrently.
 
   // Opt into the device's highest supported refresh rate on Android. Without
   // this call most OEMs (Xiaomi/OPPO/Realme/OnePlus) cap third-party apps at
   // 60Hz for power saving, which produces visible micro-judder on 90/120Hz
-  // panels. Safe no-op on devices that only support 60Hz.
+  // panels. Safe no-op on devices that only support 60Hz. Fire-and-forget:
+  // the mode applies whenever the channel call lands; nothing depends on it.
   if (Platform.isAndroid) {
-    try {
-      await FlutterDisplayMode.setHighRefreshRate();
-    } catch (_) {
-      // Some devices return errors from this API — ignore and accept 60Hz.
-    }
+    unawaited(FlutterDisplayMode.setHighRefreshRate().catchError((_) {}));
   }
 
   // Pull the version from the platform package metadata so it always tracks
-  // pubspec.yaml without manual sync. (See lib/app.dart::appVersion.)
-  try {
-    final pkgInfo = await PackageInfo.fromPlatform();
-    appVersion = pkgInfo.version;
-  } catch (_) {
-    // Fallback already covered by `appVersion = '0.0.0'` initializer.
-  }
+  // pubspec.yaml without manual sync. (See lib/app.dart::appVersion.) Only
+  // displayed in Settings → About, so it can resolve off the critical path;
+  // on error the `appVersion = '0.0.0'` initializer stays as fallback.
+  unawaited(
+    PackageInfo.fromPlatform().then((pkgInfo) {
+      appVersion = pkgInfo.version;
+      _mark('package info loaded');
+    }).catchError((_) {}),
+  );
+
+  final configFuture = ServerConfig.load();
 
   // Desktop: frameless window + system tray
+  Future<void>? windowReady;
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     await windowManager.ensureInitialized();
+    _mark('window manager initialized');
     const windowOptions = WindowOptions(
       size: Size(420, 740),
       minimumSize: Size(360, 600),
@@ -43,21 +74,34 @@ void main() async {
       skipTaskbar: false,
       titleBarStyle: TitleBarStyle.hidden,
     );
-    await windowManager.waitUntilReadyToShow(windowOptions, () async {
+    // Kick off the option-applying IPC chain without blocking runApp: the
+    // show callback fires on the native ready-to-show event (which arrives
+    // after the first frame is rendered), so rendering can proceed while the
+    // window options are still being applied.
+    windowReady = windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.setPreventClose(true);
       await windowManager.show();
       await windowManager.focus();
+      _mark('window shown');
     });
   }
 
-  final config = await ServerConfig.load();
+  final config = await configFuture;
+  _mark('config loaded');
 
+  if (_kTraceStartup) {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _mark('first frame'));
+  }
   runApp(
     ChangeNotifierProvider(
       create: (_) => DufsService(),
       child: DufsHubApp(config: config),
     ),
   );
+
+  // Surface any window-setup errors instead of dropping them; by this point
+  // runApp has already scheduled the first frame so nothing user-visible waits.
+  if (windowReady != null) await windowReady;
 }
 
 class DufsHubApp extends StatefulWidget {
