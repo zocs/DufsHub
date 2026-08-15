@@ -154,7 +154,17 @@ jobs:
         run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath fileinfra-${{ env.VERSION }}-windows-x64.zip
       - name: Install NSIS
         run: |
-          choco install nsis -y
+          # choco exits 0 even when the community feed 503s and it installs
+          # 0/0 packages (bit v0.5.0's first release run) — verify the binary
+          # actually landed and retry before trusting it.
+          $exe = "C:\Program Files (x86)\NSIS\makensis.exe"
+          foreach ($i in 1..3) {
+            choco install nsis -y
+            if (Test-Path $exe) { break }
+            Write-Host "NSIS not present after attempt $i; retrying in 30s..."
+            Start-Sleep -Seconds 30
+          }
+          if (-not (Test-Path $exe)) { Write-Error "NSIS install failed after 3 attempts"; exit 1 }
           echo "C:\Program Files (x86)\NSIS" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Build NSIS installer
         run: makensis /DAPP_VERSION=${{ env.VERSION }} installer\fileinfra.nsi
