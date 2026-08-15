@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-IMAGE_NAME="dufshub-android-builder"
+IMAGE_NAME="fileinfra-android-builder"
 SDK_DIR_IN_CONTAINER="/opt/android-sdk"
 FLUTTER_DIR_IN_CONTAINER="/opt/flutter"
 KEYSTORE_MOUNT=()
@@ -43,8 +43,8 @@ done
 if [ -n "${KEYSTORE_FILE:-}" ]; then
   KEYSTORE_HOST_PATH="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$KEYSTORE_FILE")"
   KEYSTORE_MOUNT=(
-    -v "$KEYSTORE_HOST_PATH:/tmp/dufshub-release.jks:ro"
-    -e KEYSTORE_FILE=/tmp/dufshub-release.jks
+    -v "$KEYSTORE_HOST_PATH:/tmp/fileinfra-release.jks:ro"
+    -e KEYSTORE_FILE=/tmp/fileinfra-release.jks
   )
   [ -n "${KEYSTORE_PASSWORD:-}" ] && DOCKER_ENV+=( -e KEYSTORE_PASSWORD="$KEYSTORE_PASSWORD" )
   [ -n "${KEY_ALIAS:-}" ] && DOCKER_ENV+=( -e KEY_ALIAS="$KEY_ALIAS" )

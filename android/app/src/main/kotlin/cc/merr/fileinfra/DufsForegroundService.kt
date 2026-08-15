@@ -1,4 +1,4 @@
-package cc.merr.dufshub
+package cc.merr.fileinfra
 
 import android.app.*
 import android.content.Intent
@@ -15,8 +15,8 @@ class DufsForegroundService : Service() {
     private var dufsProcess: Process? = null
 
     companion object {
-        private const val TAG = "dufshub"
-        private const val CHANNEL_ID = "dufshub_server"
+        private const val TAG = "fileinfra"
+        private const val CHANNEL_ID = "fileinfra_server"
         private const val NOTIFICATION_ID = 1001
 
         @Volatile
@@ -230,14 +230,14 @@ class DufsForegroundService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "DufsHub Server",
+                "FileInfra Server",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 // Channel name/description show only in system Settings, which
                 // follow device locale (not the in-app language), so keep them
                 // neutral English. The notification itself is localized per the
                 // in-app language in buildNotification().
-                description = "DufsHub file-sharing service"
+                description = "FileInfra file-sharing service"
                 setShowBadge(false)
             }
             val manager = getSystemService(NotificationManager::class.java)
@@ -264,9 +264,9 @@ class DufsForegroundService : Service() {
         // intent) rather than via Android string resources, which key off the
         // device locale.
         val (title, text) = when (lang) {
-            "zh" -> "DufsHub 文件分享" to "服务运行中（端口 $port）"
-            "zhTW" -> "DufsHub 檔案分享" to "服務運行中（連接埠 $port）"
-            else -> "DufsHub File Sharing" to "Running (port $port)"
+            "zh" -> "FileInfra 文件分享" to "服务运行中（端口 $port）"
+            "zhTW" -> "FileInfra 檔案分享" to "服務運行中（連接埠 $port）"
+            else -> "FileInfra File Sharing" to "Running (port $port)"
         }
 
         return builder

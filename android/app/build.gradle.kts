@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "cc.merr.dufshub"
+    namespace = "cc.merr.fileinfra"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -20,7 +20,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "cc.merr.dufshub"
+        applicationId = "cc.merr.fileinfra"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

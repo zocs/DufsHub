@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "cc.merr" "\0"
-            VALUE "FileDescription", "DufsHub" "\0"
+            VALUE "FileDescription", "FileInfra" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "dufshub" "\0"
+            VALUE "InternalName", "fileinfra" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 cc.merr. All rights reserved." "\0"
-            VALUE "OriginalFilename", "dufshub.exe" "\0"
-            VALUE "ProductName", "DufsHub" "\0"
+            VALUE "OriginalFilename", "fileinfra.exe" "\0"
+            VALUE "ProductName", "FileInfra" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

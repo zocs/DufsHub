@@ -55,20 +55,20 @@ void main() async {
   runApp(
     ChangeNotifierProvider(
       create: (_) => DufsService(),
-      child: DufsHubApp(config: config),
+      child: FileInfraApp(config: config),
     ),
   );
 }
 
-class DufsHubApp extends StatefulWidget {
+class FileInfraApp extends StatefulWidget {
   final ServerConfig config;
-  const DufsHubApp({super.key, required this.config});
+  const FileInfraApp({super.key, required this.config});
 
   @override
-  State<DufsHubApp> createState() => _DufsHubAppState();
+  State<FileInfraApp> createState() => _FileInfraAppState();
 }
 
-class _DufsHubAppState extends State<DufsHubApp> with TrayListener, WindowListener {
+class _FileInfraAppState extends State<FileInfraApp> with TrayListener, WindowListener {
   late ThemeMode _themeMode;
   late String _colorScheme;
   late String _language;
@@ -106,9 +106,9 @@ class _DufsHubAppState extends State<DufsHubApp> with TrayListener, WindowListen
       final icoBytes = await assetBundle.load('assets/icon/tray_icon.ico');
       final pngBytes = await assetBundle.load('assets/icon/app_icon.png');
       if (!mounted) return;
-      // Reuse a stable temp dir; createTemp() leaks a fresh dufshub_trayXXXXXX
+      // Reuse a stable temp dir; createTemp() leaks a fresh fileinfra_trayXXXXXX
       // directory on every launch.
-      final dir = Directory('${Directory.systemTemp.path}/dufshub_tray');
+      final dir = Directory('${Directory.systemTemp.path}/fileinfra_tray');
       await dir.create(recursive: true);
       if (Platform.isWindows) {
         final iconFile = File('${dir.path}/tray_icon.ico');
@@ -123,7 +123,7 @@ class _DufsHubAppState extends State<DufsHubApp> with TrayListener, WindowListen
       // doesn't implement it). Isolate the failure so the rest of init —
       // crucially the context menu — still runs.
       try {
-        await trayManager.setToolTip('DufsHub');
+        await trayManager.setToolTip('FileInfra');
       } catch (e) {
         debugPrint('Tray setToolTip skipped: $e');
       }

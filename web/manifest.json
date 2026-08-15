@@ -1,11 +1,11 @@
 {
-    "name": "DufsHub",
-    "short_name": "DufsHub",
+    "name": "FileInfra",
+    "short_name": "FileInfra",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "DufsHub — one-tap LAN file sharing via browser.",
+    "description": "FileInfra — one-tap LAN file sharing via browser.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

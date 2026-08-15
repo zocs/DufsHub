@@ -52,7 +52,7 @@ class App extends StatelessWidget {
 
     return MaterialApp(
       navigatorKey: navigatorKey,
-      title: 'DufsHub',
+      title: 'FileInfra',
       debugShowCheckedModeBanner: false,
       locale: _localeFromCode(language),
       themeMode: themeMode,

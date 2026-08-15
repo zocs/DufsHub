@@ -11,4 +11,4 @@
 | macOS ARM64 | `.zip` (app bundle) | ⚠️ 仅编译测试，**未签名、未实机测试** |
 | iOS arm64 | `.zip` (app bundle, no codesign) | ⚠️ 仅编译测试，**未签名、未实机测试** |
 
-> 🍎 macOS 未签名：解压后执行 `xattr -cr DufsHub.app` 去除隔离属性。
+> 🍎 macOS 未签名：解压后执行 `xattr -cr FileInfra.app` 去除隔离属性。

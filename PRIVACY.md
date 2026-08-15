@@ -1,10 +1,10 @@
-# Privacy Policy for DufsHub
+# Privacy Policy for FileInfra
 
 Last updated: 2026-05-25
 
 ## Overview
 
-DufsHub is a local file sharing application. It does NOT collect, store, or transmit any personal data to external servers.
+FileInfra is a local file sharing application. It does NOT collect, store, or transmit any personal data to external servers.
 
 ## Data Collection
 
@@ -16,9 +16,9 @@ DufsHub is a local file sharing application. It does NOT collect, store, or tran
 - Location data
 - Contacts or calendar data
 
-## How DufsHub Works
+## How FileInfra Works
 
-- DufsHub runs a local HTTP file server (dufs) on your device
+- FileInfra runs a local HTTP file server (dufs) on your device
 - Files are shared directly between devices on the same network
 - All data transfer happens locally (LAN) or through your own network setup (VPN/Tailscale/ZeroTier)
 - No data passes through any third-party servers
@@ -31,7 +31,7 @@ DufsHub is a local file sharing application. It does NOT collect, store, or tran
 
 ## Third-Party Services
 
-DufsHub uses the following open-source components:
+FileInfra uses the following open-source components:
 - [dufs](https://github.com/sigoden/dufs) (MIT License) - static file server
 
 No third-party analytics, advertising, or tracking services are used.
@@ -44,7 +44,7 @@ No third-party analytics, advertising, or tracking services are used.
 
 ## Children's Privacy
 
-DufsHub does not knowingly collect any information from children under 13.
+FileInfra does not knowingly collect any information from children under 13.
 
 ## Changes to This Policy
 

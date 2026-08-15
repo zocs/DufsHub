@@ -1,27 +1,29 @@
 <div align="center">
 
-<h1><img src="fastlane/metadata/android/en-US/icon.png" width="48" align="absmiddle"> DufsHub</h1>
+<h1><img src="fastlane/metadata/android/en-US/icon.png" width="48" align="absmiddle"> FileInfra</h1>
 
 **让文件分发更轻松。** — 局域网/工业离线场景下的轻量文件快速分发工具。
 
-[![Release](https://img.shields.io/github/v/release/zocs/dufshub)](https://github.com/zocs/dufshub/releases)
-[![License](https://img.shields.io/github/license/zocs/dufshub)](LICENSE)
-[![Downloads](https://img.shields.io/github/downloads/zocs/dufshub/total)](https://github.com/zocs/dufshub/releases)
+<sub>曾用名 <b>DufsHub</b>（2026-08 更名）</sub>
+
+[![Release](https://img.shields.io/github/v/release/zocs/fileinfra)](https://github.com/zocs/fileinfra/releases)
+[![License](https://img.shields.io/github/license/zocs/fileinfra)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/zocs/fileinfra/total)](https://github.com/zocs/fileinfra/releases)
 [![Flutter](https://img.shields.io/badge/Flutter-3.41+-blue)](https://flutter.dev)
-[![Windows](https://img.shields.io/badge/Windows-green)](https://github.com/zocs/dufshub/releases)
-[![Android](https://img.shields.io/badge/Android-green)](https://github.com/zocs/dufshub/releases)
-[![Linux](https://img.shields.io/badge/Linux-green)](https://github.com/zocs/dufshub/releases)
-[![macOS](https://img.shields.io/badge/macOS-yellow)](https://github.com/zocs/dufshub/releases)
-[![Build](https://img.shields.io/github/actions/workflow/status/zocs/dufshub/build.yml?label=build)](https://github.com/zocs/dufshub/actions)
+[![Windows](https://img.shields.io/badge/Windows-green)](https://github.com/zocs/fileinfra/releases)
+[![Android](https://img.shields.io/badge/Android-green)](https://github.com/zocs/fileinfra/releases)
+[![Linux](https://img.shields.io/badge/Linux-green)](https://github.com/zocs/fileinfra/releases)
+[![macOS](https://img.shields.io/badge/macOS-yellow)](https://github.com/zocs/fileinfra/releases)
+[![Build](https://img.shields.io/github/actions/workflow/status/zocs/fileinfra/build.yml?label=build)](https://github.com/zocs/fileinfra/actions)
 [![F-Droid](https://img.shields.io/badge/F-Droid-pending-blue)](https://gitlab.com/fdroid/fdroiddata)
 
-[English](./README.md) · [隐私政策](./PRIVACY.md) · [📥 下载](https://github.com/zocs/dufshub/releases)
+[English](./README.md) · [隐私政策](./PRIVACY.md) · [📥 下载](https://github.com/zocs/fileinfra/releases)
 
 </div>
 
 ---
 
-基于 [dufs](https://github.com/sigoden/dufs) 的图形分发工具，专为**气密局域网 / 工业离线环境**优化。**零配置，零参数**——仅需在一台设备安装 DufsHub，分享一个文件夹或单个文件，其他设备打开浏览器访问分享页即可轻松上传下载。
+基于 [dufs](https://github.com/sigoden/dufs) 的图形分发工具，专为**气密局域网 / 工业离线环境**优化。**零配置，零参数**——仅需在一台设备安装 FileInfra，分享一个文件夹或单个文件，其他设备打开浏览器访问分享页即可轻松上传下载。
 
 ---
 
@@ -31,9 +33,9 @@
 
 ---
 
-## ✨ 为什么用 DufsHub？
+## ✨ 为什么用 FileInfra？
 
-> **另一端不用额外安装任何东西** — 只需一台设备装 DufsHub，启动服务，其他人打开浏览器就可上传下载文件。
+> **另一端不用额外安装任何东西** — 只需一台设备装 FileInfra，启动服务，其他人打开浏览器就可上传下载文件。
 
 | 特性 | |
 |:---|:---:|
@@ -68,13 +70,13 @@
 
 | 平台 | 文件 | |
 |:---|:---|:---:|
-| 🪟 **Windows** | `dufshub-*-windows-x64-setup.exe`（安装版）或 `.zip`（便携版） | ✅ 已测试 |
-| 🤖 **Android** | `dufshub-*-android-arm64.apk` | ✅ 已测试 |
+| 🪟 **Windows** | `fileinfra-*-windows-x64-setup.exe`（安装版）或 `.zip`（便携版） | ✅ 已测试 |
+| 🤖 **Android** | `fileinfra-*-android-arm64.apk` | ✅ 已测试 |
 | 🐧 **Linux x64** | `.AppImage`（零依赖）或 `.deb` | ✅ 已测试 |
 | 🐧 **Linux ARM64** | `.AppImage` 或 `.deb`（理论兼容麒麟/UOS） | ✅ 已测试 |
-| 🍎 **macOS** | `DufsHub-*-macos-arm64.zip` | ⚠️ 未实测 |
+| 🍎 **macOS** | `FileInfra-*-macos-arm64.zip` | ⚠️ 未实测 |
 
-> 📥 [去 Releases 下载最新版](https://github.com/zocs/dufshub/releases)
+> 📥 [去 Releases 下载最新版](https://github.com/zocs/fileinfra/releases)
 >
 > 🤖 [F-Droid](https://f-droid.org/) 正在审核中
 
@@ -105,7 +107,7 @@
 
 ## 🔒 安全提醒
 
-> ⚠️ DufsHub 默认监听所有网卡（`0.0.0.0`）
+> ⚠️ FileInfra 默认监听所有网卡（`0.0.0.0`）
 
 | 网络环境 | 建议 |
 |:---|:---:|
@@ -127,7 +129,7 @@
 
 **现象：** 看不到文件，提示"需要开启所有文件访问权限"
 
-**解决：** 设置 → 应用 → DufsHub → 权限 → 开启「所有文件访问」
+**解决：** 设置 → 应用 → FileInfra → 权限 → 开启「所有文件访问」
 
 ### 端口被占用
 
@@ -139,26 +141,26 @@
 
 **解决：**
 ```bash
-chmod +x dufshub-*.AppImage
-./dufshub-*.AppImage
+chmod +x fileinfra-*.AppImage
+./fileinfra-*.AppImage
 ```
 
 ### macOS — 提示"无法验证开发者"
 
 **解决：**
 ```bash
-xattr -d com.apple.quarantine DufsHub.app
+xattr -d com.apple.quarantine FileInfra.app
 ```
 
 ### Windows — 其他设备连不上
 
-**解决：** 允许 DufsHub 通过 Windows 防火墙（首次启动会弹窗提示）
+**解决：** 允许 FileInfra 通过 Windows 防火墙（首次启动会弹窗提示）
 
 ---
 
 ## ❓ 常见问题
 
-**Q: 对方要装 DufsHub 吗？**
+**Q: 对方要装 FileInfra 吗？**
 A: 不用！一台设备装就行，其他人开浏览器就能用。
 
 **Q: 可以只分享单个文件，不分享整个文件夹吗？**
@@ -194,8 +196,8 @@ A: 不会！文件只在设备之间传输，不经过任何服务器。
 ### 构建
 
 ```bash
-git clone https://github.com/zocs/dufshub.git
-cd dufshub
+git clone https://github.com/zocs/fileinfra.git
+cd fileinfra
 flutter pub get
 
 # 运行（调试）
@@ -249,7 +251,7 @@ scripts/
 ├── build_macos.sh                  # macOS 打包
 └── dufs-ffi/lib.rs                 # Rust FFI 封装
 android/.../DufsForegroundService.kt # Android 原生 Service
-installer/dufshub.nsi               # Windows NSIS 安装包
+installer/fileinfra.nsi               # Windows NSIS 安装包
 ```
 
 桌面端通过 Rust FFI 内嵌 `dufs`，Android 端通过前台原生 Service 管理文件服务，因此在低内存设备上也能更稳定地跨页面生命周期运行。
@@ -258,7 +260,7 @@ installer/dufshub.nsi               # Windows NSIS 安装包
 
 ## 🙏 致谢
 
-DufsHub 基于 [dufs](https://github.com/sigoden/dufs) 构建——[sigoden](https://github.com/sigoden) 写的很好用的文件服务器。没有 dufs 就没有 DufsHub，感谢让文件分享变得这么简单。
+FileInfra 基于 [dufs](https://github.com/sigoden/dufs) 构建——[sigoden](https://github.com/sigoden) 写的很好用的文件服务器。没有 dufs 就没有 FileInfra，感谢让文件分享变得这么简单。
 
 ---
 
@@ -270,6 +272,6 @@ DufsHub 基于 [dufs](https://github.com/sigoden/dufs) 构建——[sigoden](htt
 
 <div align="center">
 
-**DufsHub** — 让文件分发更轻松。
+**FileInfra** — 让文件分发更轻松。
 
 </div>

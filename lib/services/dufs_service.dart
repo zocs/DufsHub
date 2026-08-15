@@ -210,7 +210,7 @@ class DufsService extends ChangeNotifier {
 
   Future<void> _prepareLogFile() async {
     final tmpDir = await getTemporaryDirectory();
-    _logFilePath = '${tmpDir.path}/dufshub_dufs.log';
+    _logFilePath = '${tmpDir.path}/fileinfra_dufs.log';
     try {
       await File(_logFilePath!).writeAsString('');
     } catch (_) {}
