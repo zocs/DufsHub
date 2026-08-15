@@ -89,7 +89,7 @@ class AppLocalizations {
       'settings.closeAsk': '每次询问',
       'settings.closeTray': '最小化到托盘',
       'settings.closeExit': '直接退出',
-      'about.description': '更友好的文件分发工具，让文件分享零配置、零门槛。',
+      'about.description': '更友好的文件分发工具，零配置、零门槛。',
       'about.privacy': '隐私政策',
       'about.license': '开源许可',
       'privacy.content':
@@ -285,7 +285,7 @@ class AppLocalizations {
       'settings.closeAsk': '每次詢問',
       'settings.closeTray': '最小化到系統匣',
       'settings.closeExit': '直接退出',
-      'about.description': '更友善的檔案分發工具，讓檔案分享零設定、零門檻。',
+      'about.description': '更友善的檔案分發工具，零設定、零門檻。',
       'about.privacy': '隱私權政策',
       'about.license': '開源許可',
       'privacy.content':
