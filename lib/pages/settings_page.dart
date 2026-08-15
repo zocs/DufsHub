@@ -89,7 +89,7 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Column(
               children: [
                 Text(
-                  'DUFSHUB',
+                  'FILEINFRA',
                   style: TextStyle(
                     fontFamily: 'PressStart2P',
                     fontSize: 24,
@@ -114,11 +114,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: 8),
                 GestureDetector(
                   onTap: () => launchUrl(
-                    Uri.parse('https://github.com/zocs/dufshub'),
+                    Uri.parse('https://github.com/zocs/fileinfra'),
                     mode: LaunchMode.externalApplication,
                   ),
                   child: Text(
-                    'github.com/zocs/dufshub',
+                    'github.com/zocs/fileinfra',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w500,
@@ -147,7 +147,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       onPressed: () => showLicensePage(
                         context: context,
-                        applicationName: 'DufsHub',
+                        applicationName: 'FileInfra',
                         applicationVersion: 'v$appVersion',
                         applicationLegalese:
                             'Copyright (c) 2026 zocs\nMIT License',
@@ -566,9 +566,10 @@ class _SettingsPageState extends State<SettingsPage> {
           Expanded(
             child: Text(
               text,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(height: 1.5),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontSize: 13,
+                height: 1.5,
+              ),
             ),
           ),
         ],

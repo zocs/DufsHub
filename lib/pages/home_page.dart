@@ -286,7 +286,7 @@ class _HomePageState extends State<HomePage>
             ),
             const SizedBox(width: 6),
             Text(
-              'DufsHub',
+              'FileInfra',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,

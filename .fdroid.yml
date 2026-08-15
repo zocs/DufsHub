@@ -3,15 +3,15 @@ Categories:
 
 License: MIT
 AuthorName: zocs
-WebSite: https://github.com/zocs/dufshub
-SourceCode: https://github.com/zocs/dufshub
-IssueTracker: https://github.com/zocs/dufshub/issues
-Changelog: https://github.com/zocs/dufshub/releases
+WebSite: https://github.com/zocs/fileinfra
+SourceCode: https://github.com/zocs/fileinfra
+IssueTracker: https://github.com/zocs/fileinfra/issues
+Changelog: https://github.com/zocs/fileinfra/releases
 
-AutoName: DufsHub
+AutoName: FileInfra
 Summary: The hub for dufs — one-tap LAN file sharing via browser
 Description: |-
-  DufsHub is a Dufs-based, lightweight cross-platform file distribution
+  FileInfra is a Dufs-based, lightweight cross-platform file distribution
   GUI optimized for air-gapped LANs and restricted industrial environments.
   Install it on ONE device, tap start, and anyone on the same network can
   upload and download files via browser — no app needed on the other side.
@@ -27,7 +27,7 @@ Description: |-
   * Material 3 design
 
 RepoType: git
-Repo: https://github.com/zocs/dufshub
+Repo: https://github.com/zocs/fileinfra
 
 Builds:
   - versionName: 0.3.2

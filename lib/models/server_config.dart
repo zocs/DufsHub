@@ -177,7 +177,7 @@ class ServerConfig {
     allowUpload = true;
     allowDelete = false;
     allowSearch = true;
-    allowArchive = false;
+    allowArchive = true;
     allowSymlink = false;
   }
 

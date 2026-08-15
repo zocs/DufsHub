@@ -1,4 +1,4 @@
-DufsHub is a Dufs-based, lightweight cross-platform file distribution GUI optimized for air-gapped LANs and restricted industrial environments. Install it on ONE device, tap start, and anyone on the same network can upload and download files instantly via browser — no app needed on the other side.
+FileInfra is a Dufs-based, lightweight cross-platform file distribution GUI optimized for air-gapped LANs and restricted industrial environments. Install it on ONE device, tap start, and anyone on the same network can upload and download files instantly via browser — no app needed on the other side.
 
 Just pick a folder, tap start, and share.
 

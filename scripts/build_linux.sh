@@ -1,19 +1,19 @@
 #!/bin/bash
-# build_linux.sh - Build and package DufsHub for Linux
+# build_linux.sh - Build and package FileInfra for Linux
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ARCH=${1:-x86_64}
 VERSION=$(grep '^version:' pubspec.yaml | head -1 | awk '{print $2}' | awk -F'+' '{print $1}')
-APP_NAME="dufshub"
-BUILD_ROOT="${DUFSHUB_BUILD_ROOT:-build}"
-OUTPUT_DIR="${DUFSHUB_OUTPUT_DIR:-${BUILD_ROOT}/linux/output}"
+APP_NAME="fileinfra"
+BUILD_ROOT="${FILEINFRA_BUILD_ROOT:-build}"
+OUTPUT_DIR="${FILEINFRA_OUTPUT_DIR:-${BUILD_ROOT}/linux/output}"
 
 # Architecture mapping
 DEB_ARCH=$([ "$ARCH" = "aarch64" ] && echo "arm64" || echo "amd64")
 ARCHIVE_NAME="${APP_NAME}-${VERSION}-linux-${ARCH}"
 
-echo "Building DufsHub ${VERSION} for Linux ${ARCH}..."
+echo "Building FileInfra ${VERSION} for Linux ${ARCH}..."
 
 # Build dufs shared library (or skip if already present in assets/dufs/)
 DUFS_LIB="assets/dufs/libdufs-linux-${ARCH}.so"
@@ -52,10 +52,10 @@ cp -r "${PKG_DIR}/"* "${APPDIR}/usr/bin/"
 # Create desktop entry
 cat > "${APPDIR}/${APP_NAME}.desktop" << 'DESKTOP'
 [Desktop Entry]
-Name=DufsHub
+Name=FileInfra
 Comment=One-tap LAN file sharing via browser
-Exec=dufshub
-Icon=dufshub
+Exec=fileinfra
+Icon=fileinfra
 Type=Application
 Categories=Utility;FileTransfer;
 Terminal=false
@@ -65,7 +65,7 @@ cp "${APPDIR}/${APP_NAME}.desktop" "${APPDIR}/usr/share/applications/${APP_NAME}
 
 # Copy icon
 if [ -f "assets/icon/app_icon.png" ]; then
-  cp "assets/icon/app_icon.png" "${APPDIR}/dufshub.png"
+  cp "assets/icon/app_icon.png" "${APPDIR}/fileinfra.png"
   cp "assets/icon/app_icon.png" "${APPDIR}/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.png"
 fi
 
@@ -75,7 +75,7 @@ cat > "${APPDIR}/AppRun" << 'APPRUN'
 SELF=$(readlink -f "$0")
 HERE="${SELF%/*}"
 export LD_LIBRARY_PATH="${HERE}/usr/lib:${HERE}/usr/bin/lib:${LD_LIBRARY_PATH}"
-exec "${HERE}/usr/bin/dufshub" "$@"
+exec "${HERE}/usr/bin/fileinfra" "$@"
 APPRUN
 chmod +x "${APPDIR}/AppRun"
 
@@ -120,23 +120,23 @@ cp -r "${PKG_DIR}/"* "${DEB_DIR}/opt/${APP_NAME}/"
 # Symlink to /usr/bin
 cat > "${DEB_DIR}/DEBIAN/postinst" << 'POSTINST'
 #!/bin/bash
-ln -sf /opt/dufshub/dufshub /usr/bin/dufshub
-chmod +x /opt/dufshub/dufshub
+ln -sf /opt/fileinfra/fileinfra /usr/bin/fileinfra
+chmod +x /opt/fileinfra/fileinfra
 POSTINST
 chmod 755 "${DEB_DIR}/DEBIAN/postinst"
 
 cat > "${DEB_DIR}/DEBIAN/prerm" << 'PRERM'
 #!/bin/bash
-rm -f /usr/bin/dufshub
+rm -f /usr/bin/fileinfra
 PRERM
 chmod 755 "${DEB_DIR}/DEBIAN/prerm"
 
 # Desktop entry
 cat > "${DEB_DIR}/usr/share/applications/${APP_NAME}.desktop" << 'DESKTOP'
 [Desktop Entry]
-Name=DufsHub
+Name=FileInfra
 Comment=One-tap LAN file sharing via browser
-Exec=/opt/dufshub/dufshub
+Exec=/opt/fileinfra/fileinfra
 Icon=utilities-terminal
 Type=Application
 Categories=Utility;FileTransfer;

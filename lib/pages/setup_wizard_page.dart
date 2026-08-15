@@ -64,7 +64,7 @@ class _SetupWizardPageState extends State<SetupWizardPage> {
                 Icon(Icons.swap_horiz, size: 64, color: Theme.of(context).colorScheme.primary),
                 const SizedBox(height: 12),
                 Text(
-                  'DufsHub',
+                  'FileInfra',
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.primary,

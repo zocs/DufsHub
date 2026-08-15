@@ -68,7 +68,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                         // identical removes the jarring "pop bigger" frame
                         // when Flutter takes over from the native window.
                         child: Text(
-                          'DufsHub',
+                          'FileInfra',
                           style: TextStyle(
                             fontFamily: 'PressStart2P',
                             fontSize: 24,

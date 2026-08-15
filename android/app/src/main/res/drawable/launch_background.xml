@@ -4,6 +4,6 @@
     <item>
         <bitmap
             android:gravity="center"
-            android:src="@drawable/splash_dufshub" />
+            android:src="@drawable/splash_fileinfra" />
     </item>
 </layer-list>

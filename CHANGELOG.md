@@ -1,9 +1,23 @@
 # Changelog / 更新日志
 
-> 所有版本均可在 [GitHub Releases](https://github.com/zocs/dufshub/releases) 下载。
-> All versions available at [GitHub Releases](https://github.com/zocs/dufshub/releases).
+> 所有版本均可在 [GitHub Releases](https://github.com/zocs/fileinfra/releases) 下载。
+> All versions available at [GitHub Releases](https://github.com/zocs/fileinfra/releases).
 
-## [v0.4.4](https://github.com/zocs/dufshub/releases/tag/v0.4.4) (2026-08-04)
+## [v0.5.0](https://github.com/zocs/fileinfra/releases/tag/v0.5.0) (2026-08-15)
+
+**中文：**
+- 📛 **项目更名：`DufsHub` → `FileInfra`**。应用名、包名、桌面入口、安装器、启动图同步更新。
+- ⚠️ applicationId 由 `cc.merr.dufshub` 变更为 `cc.merr.fileinfra`——breaking change：老版本无法覆盖升级，请卸载旧版后安装新版。
+- ✨ 权限预设「允许上传」现默认附带文件夹下载；开关「允许归档下载」更名为「允许文件夹下载」；使用帮助、组网提示与设置页描述文案更新。
+- ⬆️ dufs 核心升至 v0.46.0-fix2：文件夹打包下载引擎换用 async-deflate-zip v0.2.0，并纳入 `--path-prefix` 前缀边界匹配、macOS liblzma 链接等上游修复。
+
+**English:**
+- 📛 **Project renamed: `DufsHub` → `FileInfra`**. App name, package ids, desktop entries, installer, and splash updated across all platforms.
+- ⚠️ applicationId changed from `cc.merr.dufshub` to `cc.merr.fileinfra` — breaking: existing installs cannot upgrade in place; uninstall the old version, then install fresh.
+- ✨ The "Allow upload" permission preset now includes folder download; the toggle formerly labeled "Allow Archive Download" is now "Allow Folder Download"; help, networking-tip, and settings copy revised.
+- ⬆️ dufs core bumped to v0.46.0-fix2: folder archive downloads now use async-deflate-zip v0.2.0, and upstream fixes for `--path-prefix` boundary matching and macOS liblzma linking are included.
+
+## [v0.4.4](https://github.com/zocs/fileinfra/releases/tag/v0.4.4) (2026-08-04)
 
 **中文：**
 - 🐛 桌面端：修复关闭窗口（点右上角 X、Alt+F4 或托盘「退出」）后要等约 30 秒才真正关闭的问题，现在瞬间关闭。
@@ -13,7 +27,7 @@
 
 ---
 
-## [v0.4.3](https://github.com/zocs/dufshub/releases/tag/v0.4.3) (2026-07-31)
+## [v0.4.3](https://github.com/zocs/fileinfra/releases/tag/v0.4.3) (2026-07-31)
 
 **中文：**
 - ⚡ 大幅减少传输过程中的界面卡顿：活动日志改为批量刷新，二维码不再随统计数字变化反复重绘。
@@ -31,7 +45,7 @@
 
 ---
 
-## [v0.4.2](https://github.com/zocs/dufshub/releases/tag/v0.4.2) (2026-06-12)
+## [v0.4.2](https://github.com/zocs/fileinfra/releases/tag/v0.4.2) (2026-06-12)
 
 **中文：**
 - 🔒 增强账号密码安全：修复密码在特定情况下可能被记录到系统日志，并限制了会导致登录认证出错的特殊字符。
@@ -49,7 +63,7 @@
 
 ---
 
-## [v0.4.1](https://github.com/zocs/dufshub/releases/tag/v0.4.1) (2026-05-27)
+## [v0.4.1](https://github.com/zocs/fileinfra/releases/tag/v0.4.1) (2026-05-27)
 
 **中文：**
 - ✨ 启动/停止按钮内的 loading 指示器换成自定义三点跳动动画：Material 的 `CircularProgressIndicator` 每帧重绘整个 `Canvas.drawArc`，在 120Hz debug build 上肉眼可见卡顿；新组件只平移 `Offset`+`Opacity`，任何刷新率都顺滑。
@@ -61,7 +75,7 @@
 
 ---
 
-## [v0.4.0](https://github.com/zocs/dufshub/releases/tag/v0.4.0) (2026-05-27)
+## [v0.4.0](https://github.com/zocs/fileinfra/releases/tag/v0.4.0) (2026-05-27)
 
 **中文：**
 - 🏷️ **项目改名：`inout` → `DufsHub`**（applicationId 由 `cc.merr.inout` 改为 `cc.merr.dufshub`）。这是 breaking change——老版本无法直接 OTA 升级，需要卸载老版本后安装新版本。

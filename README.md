@@ -1,21 +1,23 @@
 <div align="center">
 
-<h1><img src="fastlane/metadata/android/en-US/icon.png" width="48" align="absmiddle"> DufsHub</h1>
+<h1><img src="fastlane/metadata/android/en-US/icon.png" width="48" align="absmiddle"> FileInfra</h1>
 
 **File sharing made easy.** — 让文件分发更轻松。
 
-[![Release](https://img.shields.io/github/v/release/zocs/dufshub)](https://github.com/zocs/dufshub/releases)
-[![License](https://img.shields.io/github/license/zocs/dufshub)](LICENSE)
-[![Downloads](https://img.shields.io/github/downloads/zocs/dufshub/total)](https://github.com/zocs/dufshub/releases)
+<sub>formerly known as <b>DufsHub</b> · 曾用名 DufsHub</sub>
+
+[![Release](https://img.shields.io/github/v/release/zocs/fileinfra)](https://github.com/zocs/fileinfra/releases)
+[![License](https://img.shields.io/github/license/zocs/fileinfra)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/zocs/fileinfra/total)](https://github.com/zocs/fileinfra/releases)
 [![Flutter](https://img.shields.io/badge/Flutter-3.41+-blue)](https://flutter.dev)
-[![Windows](https://img.shields.io/badge/Windows-green)](https://github.com/zocs/dufshub/releases)
-[![Android](https://img.shields.io/badge/Android-green)](https://github.com/zocs/dufshub/releases)
-[![Linux](https://img.shields.io/badge/Linux-green)](https://github.com/zocs/dufshub/releases)
-[![macOS](https://img.shields.io/badge/macOS-yellow)](https://github.com/zocs/dufshub/releases)
-[![Build](https://img.shields.io/github/actions/workflow/status/zocs/dufshub/build.yml?label=build)](https://github.com/zocs/dufshub/actions)
+[![Windows](https://img.shields.io/badge/Windows-green)](https://github.com/zocs/fileinfra/releases)
+[![Android](https://img.shields.io/badge/Android-green)](https://github.com/zocs/fileinfra/releases)
+[![Linux](https://img.shields.io/badge/Linux-green)](https://github.com/zocs/fileinfra/releases)
+[![macOS](https://img.shields.io/badge/macOS-yellow)](https://github.com/zocs/fileinfra/releases)
+[![Build](https://img.shields.io/github/actions/workflow/status/zocs/fileinfra/build.yml?label=build)](https://github.com/zocs/fileinfra/actions)
 [![F-Droid](https://img.shields.io/badge/F-Droid-pending-blue)](https://gitlab.com/fdroid/fdroiddata)
 
-[中文文档](./README_zh.md) · [Privacy Policy](./PRIVACY.md) · [📥 Releases](https://github.com/zocs/dufshub/releases)
+[中文文档](./README_zh.md) · [Privacy Policy](./PRIVACY.md) · [📥 Releases](https://github.com/zocs/fileinfra/releases)
 
 </div>
 
@@ -31,9 +33,9 @@ A Dufs-based, lightweight cross-platform file distribution GUI optimized for **a
 
 ---
 
-## ✨ Why DufsHub?
+## ✨ Why FileInfra?
 
-> **The other side doesn't need an app.** Install DufsHub on ONE device, start the server, and anyone with a browser can upload and download files.
+> **The other side doesn't need an app.** Install FileInfra on ONE device, start the server, and anyone with a browser can upload and download files.
 
 | Feature | |
 |:---|:---:|
@@ -68,13 +70,13 @@ A Dufs-based, lightweight cross-platform file distribution GUI optimized for **a
 
 | Platform | File | |
 |:---|:---|:---:|
-| 🪟 **Windows** | `dufshub-*-windows-x64-setup.exe` (installer) or `.zip` (portable) | ✅ Tested |
-| 🤖 **Android** | `dufshub-*-android-arm64.apk` | ✅ Tested |
+| 🪟 **Windows** | `fileinfra-*-windows-x64-setup.exe` (installer) or `.zip` (portable) | ✅ Tested |
+| 🤖 **Android** | `fileinfra-*-android-arm64.apk` | ✅ Tested |
 | 🐧 **Linux x64** | `.AppImage` (zero deps) or `.deb` | ✅ Tested |
 | 🐧 **Linux ARM64** | `.AppImage` or `.deb` (Kylin/UOS compatible) | ✅ Tested |
-| 🍎 **macOS** | `DufsHub-*-macos-arm64.zip` | ⚠️ Untested |
+| 🍎 **macOS** | `FileInfra-*-macos-arm64.zip` | ⚠️ Untested |
 
-> 📥 [Download latest release](https://github.com/zocs/dufshub/releases)
+> 📥 [Download latest release](https://github.com/zocs/fileinfra/releases)
 >
 > 🤖 Also available on [F-Droid](https://f-droid.org/) (pending review)
 
@@ -105,7 +107,7 @@ A Dufs-based, lightweight cross-platform file distribution GUI optimized for **a
 
 ## 🔒 Security
 
-> ⚠️ DufsHub binds to all network interfaces by default (`0.0.0.0`)
+> ⚠️ FileInfra binds to all network interfaces by default (`0.0.0.0`)
 
 | Network | Recommendation |
 |:---|:---:|
@@ -127,7 +129,7 @@ A Dufs-based, lightweight cross-platform file distribution GUI optimized for **a
 
 **Symptom:** Can't list files, "Need all files access permission"
 
-**Fix:** Settings → Apps → DufsHub → Permissions → Allow "All files access"
+**Fix:** Settings → Apps → FileInfra → Permissions → Allow "All files access"
 
 ### Port in Use
 
@@ -141,8 +143,8 @@ A Dufs-based, lightweight cross-platform file distribution GUI optimized for **a
 
 **Fix:**
 ```bash
-chmod +x dufshub-*.AppImage
-./dufshub-*.AppImage
+chmod +x fileinfra-*.AppImage
+./fileinfra-*.AppImage
 ```
 
 ### macOS — Developer Verification Blocked
@@ -151,24 +153,24 @@ chmod +x dufshub-*.AppImage
 
 **Fix:**
 ```bash
-xattr -d com.apple.quarantine DufsHub.app
+xattr -d com.apple.quarantine FileInfra.app
 ```
 
 ### Windows — Firewall Blocking
 
 **Symptom:** Other devices can't connect
 
-**Fix:** Allow DufsHub through Windows Firewall (you'll be prompted on first launch)
+**Fix:** Allow FileInfra through Windows Firewall (you'll be prompted on first launch)
 
 ---
 
 ## ❓ FAQ
 
-**Q: Does the other side need DufsHub?**
-A: No! Only one device runs DufsHub. Others just open a browser.
+**Q: Does the other side need FileInfra?**
+A: No! Only one device runs FileInfra. Others just open a browser.
 
 **Q: Can I share a single file instead of a whole folder?**
-A: Yes. Choose a single file and DufsHub will expose just that file through the browser.
+A: Yes. Choose a single file and FileInfra will expose just that file through the browser.
 
 **Q: Can I access it remotely?**
 A: LAN by default. For remote access, use ZeroTier / Tailscale / EasyTier.
@@ -200,8 +202,8 @@ A: No! Everything stays local. Transfers are device-to-device.
 ### Build
 
 ```bash
-git clone https://github.com/zocs/dufshub.git
-cd dufshub
+git clone https://github.com/zocs/fileinfra.git
+cd fileinfra
 flutter pub get
 
 # Run (debug)
@@ -272,7 +274,7 @@ scripts/
 ├── build_macos.sh                  # macOS packaging
 └── dufs-ffi/lib.rs                 # Rust FFI wrapper
 android/app/src/main/kotlin/.../DufsForegroundService.kt  # Android native service
-installer/dufshub.nsi               # Windows NSIS installer
+installer/fileinfra.nsi               # Windows NSIS installer
 ```
 
 Desktop builds embed `dufs` through Rust FFI; Android uses a foreground native service to survive Activity recreation on lower-memory devices.
@@ -281,7 +283,7 @@ Desktop builds embed `dufs` through Rust FFI; Android uses a foreground native s
 
 ## 🙏 Acknowledgments
 
-DufsHub is built on top of [dufs](https://github.com/sigoden/dufs) — a brilliant utility file server by [sigoden](https://github.com/sigoden). Without dufs, DufsHub wouldn't exist. Thanks for making file sharing so simple.
+FileInfra is built on top of [dufs](https://github.com/sigoden/dufs) — a brilliant utility file server by [sigoden](https://github.com/sigoden). Without dufs, FileInfra wouldn't exist. Thanks for making file sharing so simple.
 
 ---
 
@@ -293,6 +295,6 @@ DufsHub is built on top of [dufs](https://github.com/sigoden/dufs) — a brillia
 
 <div align="center">
 
-**DufsHub** — file sharing made easy.
+**FileInfra** — file sharing made easy.
 
 </div>

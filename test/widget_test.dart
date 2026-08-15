@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dufs_hub/models/server_config.dart';
+import 'package:file_infra/models/server_config.dart';
 
 void main() {
   test('ServerConfig serialization', () {

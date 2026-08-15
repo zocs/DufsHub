@@ -1,4 +1,4 @@
-// Generates "DufsHub" splash bitmaps for Android at multiple densities.
+// Generates "FileInfra" splash bitmaps for Android at multiple densities.
 // Usage: dart run scripts/gen_splash_bitmaps.dart
 //
 // Renders PressStart2P-style monochrome pixel bitmaps (no font dependency).
@@ -7,20 +7,24 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-// 8x8 pixel bitmaps for letters D, u, f, s, H, b in PressStart2P style.
-// Each letter is 8 rows; each row is 8 bits with MSB = leftmost pixel.
-// Capitals (D, H) span rows 1-6; lowercase ascenders (f, b) span rows 0-6;
-// short lowercase (u, s) span rows 2-6 — same vertical metrics as the
-// original "inout" 5-letter font for visual consistency.
-const _D = [0x00, 0x7C, 0x66, 0x66, 0x66, 0x66, 0x7C, 0x00];
-const _u = [0x00, 0x00, 0x66, 0x66, 0x66, 0x66, 0x3C, 0x00];
+// 8x8 pixel bitmaps for letters F, i, l, e, I, n, r, a (plus f) in
+// PressStart2P style. Each letter is 8 rows; each row is 8 bits with
+// MSB = leftmost pixel.
+// Capitals (F, I) span rows 1-6; lowercase ascenders (f, l) span rows 0-6;
+// short lowercase (e, n, r, a) span rows 2-6; i keeps its dot on row 0 —
+// same vertical metrics as the original "inout" font for visual consistency.
+const _F = [0x00, 0x7E, 0x60, 0x7C, 0x60, 0x60, 0x60, 0x00];
+const _i = [0x18, 0x00, 0x38, 0x18, 0x18, 0x18, 0x3C, 0x00];
+const _l = [0x38, 0x18, 0x18, 0x18, 0x18, 0x18, 0x3C, 0x00];
+const _e = [0x00, 0x00, 0x3C, 0x66, 0x7E, 0x60, 0x3C, 0x00];
+const _I = [0x00, 0x3C, 0x18, 0x18, 0x18, 0x18, 0x3C, 0x00];
+const _n = [0x00, 0x00, 0x7C, 0x66, 0x66, 0x66, 0x66, 0x00];
 const _f = [0x3C, 0x30, 0x7C, 0x30, 0x30, 0x30, 0x30, 0x00];
-const _s = [0x00, 0x00, 0x3C, 0x60, 0x3C, 0x06, 0x78, 0x00];
-const _H = [0x00, 0x66, 0x66, 0x7E, 0x66, 0x66, 0x66, 0x00];
-const _b = [0x60, 0x60, 0x7C, 0x66, 0x66, 0x66, 0x7C, 0x00];
+const _r = [0x00, 0x00, 0x7C, 0x66, 0x60, 0x60, 0x60, 0x00];
+const _a = [0x00, 0x00, 0x3C, 0x06, 0x3E, 0x66, 0x3E, 0x00];
 
-// "DufsHub"
-final _letters = [_D, _u, _f, _s, _H, _u, _b];
+// "FileInfra"
+final _letters = [_F, _i, _l, _e, _I, _n, _f, _r, _a];
 
 /// Generate a raw RGBA PNG (very simple, no compression library needed).
 /// Uses a minimal PNG encoder — just enough for solid-color pixel art.
@@ -113,9 +117,9 @@ int _crc32(List<int> data) {
   return crc ^ 0xFFFFFFFF;
 }
 
-/// Render "DufsHub" at the given pixel scale (each font pixel = scale × scale screen pixels).
+/// Render "FileInfra" at the given pixel scale (each font pixel = scale × scale screen pixels).
 /// Returns the raw RGBA pixel buffer and dimensions.
-(List<int> rgba, int w, int h) _renderDufsHub(int scale, int r, int g, int b, int a) {
+(List<int> rgba, int w, int h) _renderFileInfra(int scale, int r, int g, int b, int a) {
   const gap = 1; // gap between letters in font-pixels
   const letterW = 8;
   const letterH = 8;
@@ -184,16 +188,16 @@ void main() {
   // derive baseScale from this so the splash stays comfortably inside the
   // screen no matter how many letters we render — change the letter set and
   // the script self-balances. (Previously baseScale was hard-coded to 5,
-  // which was fine for "inout" (5 letters) but pushed "DufsHub" (7 letters)
-  // right to the screen edges.)
+  // which was fine for "inout" (5 letters); "DufsHub" (7) and now
+  // "FileInfra" (9) rely on the auto-derived scale.)
   const targetMdpiWidthPx = 200;
-  const gap = 1; // must match _renderDufsHub
+  const gap = 1; // must match _renderFileInfra
   const letterW = 8;
   final numLetters = _letters.length;
   final totalFontW = numLetters * letterW + (numLetters - 1) * gap;
   final baseScale = (targetMdpiWidthPx ~/ totalFontW).clamp(2, 8);
-  // "DufsHub" 7 letters → 62 font-px → baseScale=3 → 186×24px @ mdpi.
-  // (Historical "inout" 5 letters → 44 font-px → baseScale=4 → 176×32px @ mdpi.)
+  // "FileInfra" 9 letters → 80 font-px → baseScale=2 → 160×16px @ mdpi.
+  // (Historical: "inout" 5 letters → baseScale=4; "DufsHub" 7 → baseScale=3.)
   print('Letters: $numLetters, totalFontW: $totalFontW, baseScale: $baseScale');
 
   for (final cfg in configs) {
@@ -208,15 +212,15 @@ void main() {
       final densityFactor = entry.value;
       final scale = baseScale * densityFactor;
 
-      final (rgba, w, h) = _renderDufsHub(scale, r, g, b, a);
+      final (rgba, w, h) = _renderFileInfra(scale, r, g, b, a);
       final png = _generatePng(w, h, rgba);
 
       final outDir = Directory('${base.path}/${dir}-${densityName}');
       if (!outDir.existsSync()) outDir.createSync(recursive: true);
 
-      final outFile = File('${outDir.path}/splash_dufshub.png');
+      final outFile = File('${outDir.path}/splash_fileinfra.png');
       outFile.writeAsBytesSync(png);
-      print('  ✓ ${outDir.path}/splash_dufshub.png (${w}×${h}px)');
+      print('  ✓ ${outDir.path}/splash_fileinfra.png (${w}×${h}px)');
     }
   }
 
@@ -227,14 +231,14 @@ void main() {
     final g = cfg['g'] as int;
     final b = cfg['b'] as int;
     final a = cfg['a'] as int;
-    final (rgba, w, h) = _renderDufsHub(baseScale, r, g, b, a);
+    final (rgba, w, h) = _renderFileInfra(baseScale, r, g, b, a);
     final png = _generatePng(w, h, rgba);
 
     final outDir = Directory('${base.path}/$dir');
     if (!outDir.existsSync()) outDir.createSync(recursive: true);
-    final outFile = File('${outDir.path}/splash_dufshub.png');
+    final outFile = File('${outDir.path}/splash_fileinfra.png');
     outFile.writeAsBytesSync(png);
-    print('  ✓ ${outDir.path}/splash_dufshub.png (${w}×${h}px)');
+    print('  ✓ ${outDir.path}/splash_fileinfra.png (${w}×${h}px)');
   }
 
   print('\nDone! Generated splash bitmaps for all densities.');

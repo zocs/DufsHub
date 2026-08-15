@@ -86,13 +86,13 @@ Future<String> resolveDufsLibPath() async {
       // mapped is safe on Linux — the inode persists for that process.
       final tmpLib = p.join(
         Directory.systemTemp.path,
-        'dufshub-libdufs-${stat.modified.millisecondsSinceEpoch}.so',
+        'fileinfra-libdufs-${stat.modified.millisecondsSinceEpoch}.so',
       );
       try {
         await for (final e in Directory.systemTemp.list()) {
           final name = p.basename(e.path);
           if (e is File &&
-              name.startsWith('dufshub-libdufs-') &&
+              name.startsWith('fileinfra-libdufs-') &&
               name.endsWith('.so') &&
               e.path != tmpLib) {
             try {

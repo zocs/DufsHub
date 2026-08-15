@@ -4,5 +4,5 @@
 /// project-specific domain) only touches this file.
 library;
 
-const String kReverseDomain = 'cc.merr.dufshub';
+const String kReverseDomain = 'cc.merr.fileinfra';
 const String kMethodChannel = '$kReverseDomain/native';

@@ -7,7 +7,7 @@
 # The output is a .so / .dll / .dylib that exposes dufs_start / dufs_stop / dufs_is_running.
 set -euo pipefail
 
-DUFS_VERSION="v0.46.0-fix1"
+DUFS_VERSION="v0.46.0-fix2"
 DUFS_REPO="https://github.com/zocs/dufs.git"
 PLATFORM=${1:?Usage: $0 <platform>}
 
@@ -40,7 +40,7 @@ else
   git clone --depth 1 --branch "$DUFS_VERSION" "$DUFS_REPO" "$DUFS_SRC"
 fi
 
-# Apply DufsHub's FFI modifications (lib.rs + Cargo.toml [lib] section)
+# Apply FileInfra's FFI modifications (lib.rs + Cargo.toml [lib] section)
 DUFS_FFI_DIR="${SCRIPT_DIR}/dufs-ffi"
 if [ -d "$DUFS_FFI_DIR" ]; then
   echo "Applying FFI modifications..."
@@ -212,7 +212,7 @@ XEOF
     # Since dufs v0.46.0, tls pulls rustls's aws-lc-rs provider (aws-lc-sys C
     # objects), whose cmake build targets the host SDK's min iOS (26.5) while
     # rustc links for arm64-apple-ios10.0.0 — the mix fails with undefined
-    # arm64 symbols. DufsHub never passes --tls-cert/--tls-key, so nothing is
+    # arm64 symbols. FileInfra never passes --tls-cert/--tls-key, so nothing is
     # lost. Revisit if the HTTPS roadmap item lands (fix aws-lc's
     # IPHONEOS_DEPLOYMENT_TARGET, or pin the ring provider in the fork).
     cargo build --release --no-default-features --target "$RUST_TARGET"

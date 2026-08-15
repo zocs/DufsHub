@@ -1,4 +1,4 @@
-package cc.merr.dufshub
+package cc.merr.fileinfra
 
 import android.Manifest
 import android.content.Intent
@@ -15,7 +15,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "cc.merr.dufshub/native"
+    private val CHANNEL = "cc.merr.fileinfra/native"
     private val STORAGE_PERMISSION_CODE = 1001
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -26,7 +26,7 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
                 "log" -> {
                     val msg = call.argument<String>("msg") ?: ""
-                    Log.d("dufshub", msg)
+                    Log.d("fileinfra", msg)
                     result.success(null)
                 }
                 "getNativeLibraryDir" -> {
@@ -38,7 +38,7 @@ class MainActivity : FlutterActivity() {
                     } else {
                         ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
                     }
-                    Log.d("dufshub", "Storage granted: $granted (API ${Build.VERSION.SDK_INT})")
+                    Log.d("fileinfra", "Storage granted: $granted (API ${Build.VERSION.SDK_INT})")
                     result.success(granted)
                 }
                 "requestStorage" -> {
@@ -73,13 +73,13 @@ class MainActivity : FlutterActivity() {
                     } else {
                         startService(intent)
                     }
-                    Log.d("dufshub", "Foreground service start requested: port=$port")
+                    Log.d("fileinfra", "Foreground service start requested: port=$port")
                     result.success(true)
                 }
                 "stopForegroundService" -> {
                     val intent = Intent(this, DufsForegroundService::class.java)
                     stopService(intent)
-                    Log.d("dufshub", "Foreground service stop requested")
+                    Log.d("fileinfra", "Foreground service stop requested")
                     result.success(true)
                 }
                 "isServiceRunning" -> {

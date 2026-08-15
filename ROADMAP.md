@@ -1,4 +1,4 @@
-# DufsHub Roadmap
+# FileInfra Roadmap
 
 ## Current Status (2026-04-27)
 
@@ -46,7 +46,7 @@
 
 - [ ] Android 桌面小部件（快速启动/停止）
 - [ ] Android 快捷方式（直接分享指定目录）
-- [ ] Windows 右键菜单集成（"用 DufsHub 分享此文件夹"）
+- [ ] Windows 右键菜单集成（"用 FileInfra 分享此文件夹"）
 - [ ] macOS DMG 安装包
 - [ ] Android AAB 格式（Play Store 准备）
 - [ ] iPad 适配

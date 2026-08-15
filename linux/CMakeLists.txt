@@ -4,10 +4,10 @@ project(runner LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(BINARY_NAME "dufshub")
+set(BINARY_NAME "fileinfra")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
-set(APPLICATION_ID "cc.merr.dufshub")
+set(APPLICATION_ID "cc.merr.fileinfra")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
@@ -112,7 +112,7 @@ if(EXISTS "${DUFS_SRC}")
     COMPONENT Runtime)
 else()
   message(WARNING
-    "DufsHub: ${DUFS_SRC} not found — run scripts/build_dufs.sh "
+    "FileInfra: ${DUFS_SRC} not found — run scripts/build_dufs.sh "
     "linux-x86_64 (or linux-arm64) first, otherwise the server start "
     "will fail at runtime with 'cannot open shared object file'.")
 endif()
