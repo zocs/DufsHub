@@ -98,8 +98,8 @@ class AppLocalizations {
       'help.step2': '按下「启动服务」按钮，呈现二维码和访问地址',
       'help.step3': '用其他设备扫描二维码即可进行文件上传和下载',
       'help.tip':
-          '建议优先使用稳定的本地局域网进行传输；远程组网环境初步可用，但稳定性尚待跟进。',
-      'help.tip2': '建议锁定 App 后台和调整省电策略为无限制，以保证传输稳定。',
+          '建议优先使用稳定的本地局域网进行传输；\n远程组网环境初步测试可用。',
+      'help.tip2': '建议锁定 App 后台和调整省电策略为无限制，\n以保证传输稳定。',
     },
     'en': {
       'app.name': 'FileInfra',
@@ -201,9 +201,9 @@ class AppLocalizations {
       'help.step3':
           'Scan the QR code with another device to upload and download files',
       'help.tip':
-          'Prefer a stable local network (LAN/WLAN) for transfers. Remote mesh/VPN networking basically works, but stability is still being improved.',
+          'Prefer a stable local network (LAN/WLAN) for transfers;\nremote mesh/VPN networking works in preliminary testing.',
       'help.tip2':
-          'Consider pinning the app to background and setting battery optimization to unrestricted for stable transfers.',
+          'Consider pinning the app to background and setting battery optimization to unrestricted,\nto keep transfers stable.',
     },
     'zhTW': {
       'app.name': 'FileInfra',
@@ -295,8 +295,8 @@ class AppLocalizations {
       'help.step2': '按下「啟動服務」按鈕，呈現 QR 碼與存取位址',
       'help.step3': '用其他裝置掃描 QR 碼即可上傳和下載檔案',
       'help.tip':
-          '建議優先使用穩定的本地區域網路進行傳輸；遠端組網環境初步可用，但穩定性尚待跟進。',
-      'help.tip2': '建議鎖定 App 後台和調整省電策略為無限制，以保證傳輸穩定。',
+          '建議優先使用穩定的本地區域網路進行傳輸；\n遠端組網環境初步測試可用。',
+      'help.tip2': '建議鎖定 App 後台和調整省電策略為無限制，\n以保證傳輸穩定。',
     },
   };
 }
