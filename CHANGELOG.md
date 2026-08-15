@@ -6,12 +6,16 @@
 ## [v0.5.0](https://github.com/zocs/fileinfra/releases/tag/v0.5.0) (2026-08-15)
 
 **中文：**
-- 📛 **项目更名：`DufsHub` → `FileInfra`**（终局名）。应用名、包名、桌面入口、安装器、启动图全部同步更新。
+- 📛 **项目更名：`DufsHub` → `FileInfra`**。应用名、包名、桌面入口、安装器、启动图同步更新。
 - ⚠️ applicationId 由 `cc.merr.dufshub` 变更为 `cc.merr.fileinfra`——breaking change：老版本无法覆盖升级，请卸载旧版后安装新版。
+- ✨ 权限预设「允许上传」现默认附带文件夹下载；开关「允许归档下载」更名为「允许文件夹下载」；使用帮助、组网提示与设置页描述文案更新。
+- ⬆️ dufs 核心升至 v0.46.0-fix2：文件夹打包下载引擎换用 async-deflate-zip v0.2.0，并纳入 `--path-prefix` 前缀边界匹配、macOS liblzma 链接等上游修复。
 
 **English:**
-- 📛 **Project renamed: `DufsHub` → `FileInfra`** (the final name). App name, package id, desktop entries, installer, and splash updated across all platforms.
+- 📛 **Project renamed: `DufsHub` → `FileInfra`**. App name, package ids, desktop entries, installer, and splash updated across all platforms.
 - ⚠️ applicationId changed from `cc.merr.dufshub` to `cc.merr.fileinfra` — breaking: existing installs cannot upgrade in place; uninstall the old version, then install fresh.
+- ✨ The "Allow upload" permission preset now includes folder download; the toggle formerly labeled "Allow Archive Download" is now "Allow Folder Download"; help, networking-tip, and settings copy revised.
+- ⬆️ dufs core bumped to v0.46.0-fix2: folder archive downloads now use async-deflate-zip v0.2.0, and upstream fixes for `--path-prefix` boundary matching and macOS liblzma linking are included.
 
 ## [v0.4.4](https://github.com/zocs/fileinfra/releases/tag/v0.4.4) (2026-08-04)
 
