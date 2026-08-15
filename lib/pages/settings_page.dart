@@ -566,9 +566,10 @@ class _SettingsPageState extends State<SettingsPage> {
           Expanded(
             child: Text(
               text,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(height: 1.5),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontSize: 13,
+                height: 1.5,
+              ),
             ),
           ),
         ],
