@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../models/server_config.dart';
@@ -245,7 +248,8 @@ class LogPage extends StatelessWidget {
           color: Theme.of(context).colorScheme.outline,
         ),
       ),
-      onTap: () {
+      onTap: () => _openEntry(context, entry),
+      onLongPress: () {
         // Copy path to clipboard
         Clipboard.setData(ClipboardData(text: entry.path));
         ScaffoldMessenger.of(context).showSnackBar(
@@ -253,6 +257,55 @@ class LogPage extends StatelessWidget {
         );
       },
     );
+  }
+
+  /// 点击记录 → 用系统关联程序打开对应的本地文件
+  Future<void> _openEntry(BuildContext context, TransferLog entry) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final target = _resolveTarget(entry.path);
+    if (target == null) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.t('log.fileGone'))));
+      return;
+    }
+    final result = await OpenFilex.open(target);
+    if (result.type != ResultType.done) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('${l10n.t('log.openFailed')}: ${result.message}'),
+        ),
+      );
+    }
+  }
+
+  /// 把日志里的请求路径映射回磁盘绝对路径。
+  /// 单文件分享时所有请求都指向被分享的那个文件；目录分享时按候选
+  /// （原样 → 去 query → URL 解码）取第一个真实存在的路径。
+  String? _resolveTarget(String reqPath) {
+    final root = config.path;
+    if (root.isEmpty) return null;
+    if (FileSystemEntity.typeSync(root) == FileSystemEntityType.file) {
+      return root;
+    }
+    final candidates = <String>{reqPath};
+    final q = reqPath.indexOf('?');
+    if (q >= 0) candidates.add(reqPath.substring(0, q));
+    for (final c in candidates.toList()) {
+      try {
+        candidates.add(Uri.decodeComponent(c));
+      } catch (_) {}
+    }
+    final rootPrefix = Directory(root).absolute.uri.toString();
+    for (final c in candidates) {
+      final rel = c.startsWith('/') ? c.substring(1) : c;
+      final full = File('$root/$rel').absolute;
+      // 防 ../ 逃出分享根
+      if (!full.uri.toString().startsWith(rootPrefix)) continue;
+      if (FileSystemEntity.typeSync(full.path) !=
+          FileSystemEntityType.notFound) {
+        return full.path;
+      }
+    }
+    return null;
   }
 
   /// 只显示文件名，不显示完整路径
