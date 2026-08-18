@@ -9,7 +9,7 @@
 [![Release](https://img.shields.io/github/v/release/zocs/fileinfra)](https://github.com/zocs/fileinfra/releases)
 [![License](https://img.shields.io/github/license/zocs/fileinfra)](LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/zocs/fileinfra/total)](https://github.com/zocs/fileinfra/releases)
-[![Flutter](https://img.shields.io/badge/Flutter-3.41+-blue)](https://flutter.dev)
+[![Flutter](https://img.shields.io/badge/Flutter-3.47+-blue)](https://flutter.dev)
 [![Windows](https://img.shields.io/badge/Windows-green)](https://github.com/zocs/fileinfra/releases)
 [![Android](https://img.shields.io/badge/Android-green)](https://github.com/zocs/fileinfra/releases)
 [![Linux](https://img.shields.io/badge/Linux-green)](https://github.com/zocs/fileinfra/releases)
