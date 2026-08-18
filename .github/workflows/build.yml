@@ -10,9 +10,12 @@ permissions:
   contents: write
 
 env:
-  FLUTTER_VERSION: '3.41.5'
+  FLUTTER_VERSION: '3.47.0'
   # Bump after verifying ABI compat (esp. page-alignment on devices < API 35).
-  EXPECTED_NDK_MAJOR: '28'
+  # 28→29 (2026-08-18): runner ships NDK 29; libdufs alignment is still
+  # force-pinned to 4KB by build_dufs.sh and verified by the hard guard below,
+  # so the <API 35 page-size concern is covered independently of NDK default.
+  EXPECTED_NDK_MAJOR: '29'
   # Android dynamic linker on devices < API 35 mishandles 16KB-aligned LOAD
   # segments. scripts/build_dufs.sh android-arm64 forces 0x1000 via
   # -Wl,-z,max-page-size=0x1000; this guard catches drift.
@@ -24,7 +27,7 @@ jobs:
     name: Analyze
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
@@ -35,11 +38,11 @@ jobs:
     name: Android
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Extract version
         shell: bash
         run: echo "VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | awk -F'+' '{print $1}')" >> $GITHUB_ENV
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -47,7 +50,7 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
       - name: Cache cargo
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
@@ -56,7 +59,7 @@ jobs:
           restore-keys: |
             cargo-aarch64-linux-android-
       - name: Cache Gradle
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.gradle/caches
@@ -113,7 +116,7 @@ jobs:
         run: flutter build apk --release
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk fileinfra-${{ env.VERSION }}-android-arm64.apk
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: android
           path: |
@@ -123,7 +126,7 @@ jobs:
     name: Windows x64
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Extract version
         shell: bash
         run: echo "VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | awk -F'+' '{print $1}')" >> $GITHUB_ENV
@@ -131,7 +134,7 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
       - name: Cache cargo
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
@@ -168,7 +171,7 @@ jobs:
           echo "C:\Program Files (x86)\NSIS" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Build NSIS installer
         run: makensis /DAPP_VERSION=${{ env.VERSION }} installer\fileinfra.nsi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: windows
           path: |
@@ -179,12 +182,12 @@ jobs:
     name: Linux x64
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
       - name: Cache cargo
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
@@ -202,7 +205,7 @@ jobs:
           sudo apt-get install -y libgtk-3-dev dpkg-dev libfuse2 cmake ninja-build clang lld llvm libayatana-appindicator3-dev libsecret-1-dev
       - name: Build and package
         run: bash scripts/build_linux.sh x86_64
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: linux-x64
           path: build/linux/output/*
@@ -211,7 +214,7 @@ jobs:
     name: Linux ARM64
     runs-on: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Flutter manually
         run: |
           git clone --depth 1 --branch ${{ env.FLUTTER_VERSION }} https://github.com/flutter/flutter.git "$HOME/flutter" || \
@@ -222,7 +225,7 @@ jobs:
           flutter precache --linux
           flutter config --no-analytics
       - name: Cache cargo
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
@@ -242,7 +245,7 @@ jobs:
         run: |
           export PATH="$HOME/flutter/bin:$HOME/flutter/bin/cache/dart-sdk/bin:$PATH"
           bash scripts/build_linux.sh aarch64
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: linux-arm64
           path: build/linux/output/*
@@ -251,12 +254,12 @@ jobs:
     name: macOS ARM64
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
       - name: Cache cargo
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
@@ -270,7 +273,7 @@ jobs:
           targets: aarch64-apple-darwin
       - name: Build and package
         run: bash scripts/build_macos.sh aarch64
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: macos-arm64
           path: build/macos/output/*
@@ -279,12 +282,12 @@ jobs:
     name: iOS
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
       - name: Cache cargo
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
@@ -306,7 +309,7 @@ jobs:
           VERSION=$(grep 'version:' pubspec.yaml | head -1 | awk '{print $2}' | awk -F'+' '{print $1}')
           cp -r build/ios/iphoneos/Runner.app "build/ios/output/${APP_NAME}-${VERSION}-ios-arm64.app"
           cd build/ios/output && zip -r -y "${APP_NAME}-${VERSION}-ios-arm64.zip" "${APP_NAME}-${VERSION}-ios-arm64.app"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ios
           path: build/ios/output/*
@@ -319,8 +322,8 @@ jobs:
     steps:
       # checkout first: it cleans the workspace, so it must run before the
       # artifacts are downloaded. Needed for CHANGELOG.md + the release footer.
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
       - name: List artifacts

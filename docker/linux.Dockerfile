@@ -11,7 +11,7 @@ ARG no_proxy
 
 ENV DEBIAN_FRONTEND=noninteractive \
     FLUTTER_HOME=/opt/flutter \
-    FLUTTER_VERSION=3.41.5 \
+    FLUTTER_VERSION=3.47.0 \
     FLUTTER_TAR=flutter_linux_3.41.5-stable.tar.xz \
     CARGO_HOME=/usr/local/cargo \
     RUSTUP_HOME=/usr/local/rustup \
