@@ -81,9 +81,13 @@ chmod +x "${APPDIR}/AppRun"
 
 # Download linuxdeploy (better architecture handling than appimagetool)
 LINUXDEPLOY_ARCH=$([ "$ARCH" = "aarch64" ] && echo "aarch64" || echo "x86_64")
-if [ ! -f /tmp/linuxdeploy ]; then
-  curl -sL "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-${LINUXDEPLOY_ARCH}.AppImage" -o /tmp/linuxdeploy
-  chmod +x /tmp/linuxdeploy
+# 缓存名带 arch 后缀：同一台机器先后编 x86_64/aarch64 时，旧缓存会把
+# 另一个架构的 AppImage 塞进产物。上游只有 continuous 通道在维护，
+# 无法 pin tag——已知妥协，记录于此。
+LINUXDEPLOY_BIN="/tmp/linuxdeploy-${LINUXDEPLOY_ARCH}"
+if [ ! -f "$LINUXDEPLOY_BIN" ]; then
+  curl -sL "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-${LINUXDEPLOY_ARCH}.AppImage" -o "$LINUXDEPLOY_BIN"
+  chmod +x "$LINUXDEPLOY_BIN"
 fi
 
 # Use linuxdeploy for AppImage creation
@@ -91,7 +95,7 @@ export ARCH=${LINUXDEPLOY_ARCH}
 export OUTPUT="${OUTPUT_DIR}/${ARCHIVE_NAME}.AppImage"
 export NO_STRIP=true
 export APPIMAGE_EXTRACT_AND_RUN=1
-/tmp/linuxdeploy --appdir "${APPDIR}" --output appimage
+"$LINUXDEPLOY_BIN" --appdir "${APPDIR}" --output appimage
 echo "Created: ${OUTPUT}"
 
 # ==================== .deb ====================
@@ -107,7 +111,7 @@ Version: ${VERSION}
 Section: utils
 Priority: optional
 Architecture: ${DEB_ARCH}
-Depends: libgtk-3-0, libglib2.0-0
+Depends: libgtk-3-0, libglib2.0-0, libsecret-1-0, libayatana-appindicator3-1
 Maintainer: zocs <zocs@live.com>
 Description: One-tap LAN file sharing via browser
  A Dufs-based, lightweight cross-platform file distribution GUI optimized
@@ -176,7 +180,20 @@ ln -sf /opt/${APP_NAME}/${APP_NAME} %{buildroot}/usr/bin/${APP_NAME}
 /usr/bin/${APP_NAME}
 SPEC
 
-  rpmbuild -bb --define "_topdir ${RPM_DIR}" --define "_builddir ${RPM_DIR}/BUILD" "${RPM_DIR}/SPECS/${APP_NAME}.spec" 2>&1 || echo "RPM build failed, continuing..."
+  # _topdir 必须是绝对路径：rpmbuild 对相对值按 / 解析，
+  # 历史上因此一直找不到 BUILDROOT（v0.5.0 起 .rpm 就没产出过）
+  RPM_DIR="$(cd "${RPM_DIR}" && pwd)"
+  if rpmbuild -bb --define "_topdir ${RPM_DIR}" --define "_builddir ${RPM_DIR}/BUILD" "${RPM_DIR}/SPECS/${APP_NAME}.spec" > /tmp/rpmbuild.log 2>&1; then
+    cat /tmp/rpmbuild.log
+  else
+    cat /tmp/rpmbuild.log
+    # 失败不再静默：CI 上至少留 ::warning:: 痕迹（产物少一个 .rpm）
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+      echo "::warning::RPM build failed, continuing without the .rpm artifact"
+    else
+      echo "WARNING: RPM build failed, continuing without the .rpm artifact" >&2
+    fi
+  fi
   # Copy RPM if created
   RPM_FILE=$(find "${RPM_DIR}/RPMS" -name "*.rpm" 2>/dev/null | head -1)
   if [ -n "$RPM_FILE" ]; then
@@ -185,6 +202,9 @@ SPEC
   else
     echo "RPM not created, skipping"
   fi
+  # 构建树不能留在 output 里：artifact 上传用 output/*，rpm-build/RPMS
+  # 下的原始 rpm 会被 release 的 **/*.rpm glob 再捞一遍（v0.5.1 踩过）
+  rm -rf "${RPM_DIR}"
 else
   echo "rpmbuild not found, skipping .rpm"
 fi

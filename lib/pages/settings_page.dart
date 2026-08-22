@@ -245,7 +245,6 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
 
           const Divider(height: 24),
-          const Divider(height: 24),
 
           // ========== Storage Permission (Android) ==========
           if (Theme.of(context).platform == TargetPlatform.android) ...[

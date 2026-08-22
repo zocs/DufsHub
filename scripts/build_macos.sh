@@ -1,6 +1,6 @@
 #!/bin/bash
 # build_macos.sh - Build FileInfra for macOS
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ARCH=${1:-aarch64}

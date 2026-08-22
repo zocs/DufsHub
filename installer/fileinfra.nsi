@@ -15,7 +15,12 @@ SetCompressor /SOLID lzma
 !include "LogicLib.nsh"
 
 Name "${APP_NAME} ${APP_VERSION}"
+; OutFile 在 !cd ".." 之前定义——当前组合经 CI 实证产物落在调用目录
+;（repo 根，v0.5.0 release 已验证）。本地无 makensis 可测，勿凭文档
+; 调整定义顺序，改前先在 CI 冒烟。
 OutFile "fileinfra-${APP_VERSION}-windows-x64-setup.exe"
+; 记住上次安装目录：自定义路径的用户升级时不再装出第二份
+InstallDirRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "InstallLocation"
 InstallDir "$PROGRAMFILES64\${APP_NAME}"
 RequestExecutionLevel admin
 
@@ -70,7 +75,8 @@ Section "Install"
 
   SetOutPath "$INSTDIR"
   !cd ".."
-  File /r "build\windows\x64\runner\Release\*.*"
+  ; 用 * 而非 *.*：无扩展名文件（如 LICENSE）不落在 *.* 的通配里
+  File /r "build\windows\x64\runner\Release\*"
 
   ; Create shortcuts
   CreateDirectory "$SMPROGRAMS\${APP_NAME}"
@@ -84,6 +90,7 @@ Section "Install"
   ; Register in Add/Remove Programs
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "DisplayName" "${APP_NAME}"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "UninstallString" "$INSTDIR\Uninstall.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "InstallLocation" "$INSTDIR"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "Publisher" "${APP_PUBLISHER}"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "DisplayVersion" "${APP_VERSION}"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "URLInfoAbout" "${APP_URL}"

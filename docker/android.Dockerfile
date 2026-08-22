@@ -12,7 +12,6 @@ ARG no_proxy
 ENV DEBIAN_FRONTEND=noninteractive \
     FLUTTER_HOME=/opt/flutter \
     FLUTTER_VERSION=3.47.0 \
-    FLUTTER_TAR=flutter_linux_3.41.5-stable.tar.xz \
     ANDROID_HOME=/opt/android-sdk \
     ANDROID_SDK_ROOT=/opt/android-sdk \
     JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 \
@@ -39,7 +38,10 @@ RUN apt-get update && apt-get install -y \
     zip \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl -fsSL "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/${FLUTTER_TAR}" -o /tmp/flutter.tar.xz \
+# Tarball name derives from FLUTTER_VERSION (release naming has been
+# flutter_linux_<ver>-stable.tar.xz for years) so the two can never drift
+# apart again — they did once (ENV said 3.47.0, tar was 3.41.5).
+RUN curl -fsSL "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz" -o /tmp/flutter.tar.xz \
     && mkdir -p /opt \
     && tar -xJf /tmp/flutter.tar.xz -C /opt \
     && rm -f /tmp/flutter.tar.xz \

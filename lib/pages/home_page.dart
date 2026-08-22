@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -49,6 +50,7 @@ class _HomePageState extends State<HomePage>
   bool _isDragOver = false;
   bool _isServerTransitioning = false;
   bool _isStoppingServer = false;
+  Timer? _portSaveDebounce;
   static const _ch = MethodChannel(kMethodChannel);
 
   AppLocalizations get l10n => AppLocalizations(_config.language);
@@ -70,6 +72,7 @@ class _HomePageState extends State<HomePage>
 
   @override
   void dispose() {
+    _portSaveDebounce?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     windowManager.removeListener(this);
     _usernameController.dispose();
@@ -258,7 +261,9 @@ class _HomePageState extends State<HomePage>
       allowMultiple: false,
       lockParentWindow: true,
     );
-    final pickedPath = result?.files.single.path;
+    // 部分平台取消时返回非 null 但空列表，`files.single` 会 StateError
+    final files = result?.files ?? const <PlatformFile>[];
+    final pickedPath = files.isNotEmpty ? files.single.path : null;
     if (pickedPath != null && pickedPath.isNotEmpty) {
       setState(() {
         _config.path = pickedPath;
@@ -467,7 +472,6 @@ class _HomePageState extends State<HomePage>
                 : (_) async {
                     setState(() => _config.applyReadonly());
                     await _saveConfig();
-                    _maybeRestart(service);
                   },
           ),
         ),
@@ -486,7 +490,6 @@ class _HomePageState extends State<HomePage>
                 : (_) async {
                     setState(() => _config.applyUpload());
                     await _saveConfig();
-                    _maybeRestart(service);
                   },
           ),
         ),
@@ -503,7 +506,6 @@ class _HomePageState extends State<HomePage>
                 : (_) async {
                     setState(() => _config.applyFull());
                     await _saveConfig();
-                    _maybeRestart(service);
                   },
           ),
         ),
@@ -531,7 +533,6 @@ class _HomePageState extends State<HomePage>
             }
           });
           await _saveConfig();
-          _maybeRestart(service);
         },
       },
       {
@@ -548,7 +549,6 @@ class _HomePageState extends State<HomePage>
             }
           });
           await _saveConfig();
-          _maybeRestart(service);
         },
       },
       {
@@ -559,7 +559,6 @@ class _HomePageState extends State<HomePage>
         'onChanged': (v) async {
           setState(() => _config.allowSearch = v);
           await _saveConfig();
-          _maybeRestart(service);
         },
       },
       {
@@ -570,7 +569,6 @@ class _HomePageState extends State<HomePage>
         'onChanged': (v) async {
           setState(() => _config.allowArchive = v);
           await _saveConfig();
-          _maybeRestart(service);
         },
       },
     ];
@@ -612,47 +610,6 @@ class _HomePageState extends State<HomePage>
         ),
       ),
     );
-  }
-
-  /// Auto-restart if running with no active connections
-  Future<void> _maybeRestart(DufsService service) async {
-    if (!service.isRunning) return;
-    // Only confirm before restarting if there was activity in the last 15s —
-    // i.e. a transfer is likely in progress. A lifetime request counter would
-    // pop the confirm dialog forever after any single past request.
-    final since = service.timeSinceLastActivity;
-    final recentlyActive = since != null && since < const Duration(seconds: 15);
-    if (recentlyActive) {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(l10n.t('perm.restartTitle')),
-          content: Text(l10n.t('perm.restartMsg')),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(l10n.t('perm.restart')),
-            ),
-          ],
-        ),
-      );
-      if (confirmed == true) await _restartServer(service);
-    } else {
-      await _restartServer(service);
-    }
-  }
-
-  Future<void> _restartServer(DufsService service) async {
-    await _runServerTransition(() async {
-      await service.stopServer();
-      await _saveConfig();
-      if (_enableAuth && _config.auth == null) return;
-      await service.startServer(_config);
-    }, stopping: true);
   }
 
   Future<void> _runServerTransition(
@@ -894,7 +851,7 @@ class _HomePageState extends State<HomePage>
                     context,
                     Icons.http,
                     '${service.totalRequests}',
-                    'Requests',
+                    l10n.t('home.statRequests'),
                   ),
                   Container(
                     width: 1,
@@ -907,7 +864,7 @@ class _HomePageState extends State<HomePage>
                     context,
                     Icons.access_time,
                     service.lastActivity ?? '--',
-                    'Last',
+                    l10n.t('home.statLast'),
                   ),
                   Container(
                     width: 1,
@@ -1155,11 +1112,15 @@ class _HomePageState extends State<HomePage>
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               controller: _portController,
-              onChanged: (v) async {
+              onSubmitted: (_) => _saveConfig(),
+              onChanged: (v) {
                 final port = int.tryParse(v);
                 if (port != null && port >= 1 && port <= 65535) {
                   _config.port = port;
-                  await _saveConfig();
+                  // 敲"5000"会触发 4 次保存写盘；防抖 500ms，回车立即落盘
+                  _portSaveDebounce?.cancel();
+                  _portSaveDebounce =
+                      Timer(const Duration(milliseconds: 500), _saveConfig);
                 }
               },
             ),

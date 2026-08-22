@@ -7,6 +7,7 @@ import 'package:network_info_plus/network_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import '../constants.dart';
+import '../l10n/app_localizations.dart';
 import '../models/server_config.dart';
 import '../models/transfer_log.dart';
 import 'dufs_ffi.dart';
@@ -18,10 +19,20 @@ bool get _useFfi => Platform.isLinux || Platform.isMacOS || Platform.isWindows;
 
 class DufsService extends ChangeNotifier {
   static const _ch = MethodChannel(kMethodChannel);
+  /// --log-file 轮转上限：超限即在读取后截断（内容已入 UI），防长会话
+  /// 无界增长（F3 的 Dart 侧缓解；dufs 以追加模式写，截断后继续从 0 写）。
+  static const _kMaxLogBytes = 16 * 1024 * 1024;
 
   final DufsFfi _dufsFfi = DufsFfi();
   Process? _process;
+  /// iOS 子进程退出码；startServer 的 300ms 等待后非空即视为启动失败。
+  int? _processExitCode;
   bool _isRunning = false;
+  /// 重入守卫：_isRunning 要到启动链尾段才置位，resume 恢复与用户点击
+  /// 可并发触发两次启动（UI 的 _isServerTransitioning 只护住按钮）。
+  bool _isStarting = false;
+  /// 当前 UI 语言，用于服务层错误/提示文案。
+  String _lang = 'zh';
   String? _serverUrl;
   String? _localIp;
   String? _error;
@@ -73,6 +84,14 @@ class DufsService extends ChangeNotifier {
     if (Platform.isAndroid) {
       _ch.invokeMethod('log', {'msg': msg}).catchError((_) {});
     }
+  }
+
+  AppLocalizations get _l10n => AppLocalizations(_lang);
+
+  String _t(String key, Map<String, String> params) {
+    var s = _l10n.t(key);
+    params.forEach((k, v) => s = s.replaceAll('{$k}', v));
+    return s;
   }
 
   Future<String?> _getWifiIP() async {
@@ -138,53 +157,39 @@ class DufsService extends ChangeNotifier {
     await _killOrphanDufs(requestedPort);
     await Future.delayed(const Duration(milliseconds: 400));
     if (await _isPortAvailable(requestedPort)) {
-      _portInfo = '检测到残留 dufs 进程，已结束并使用端口 $requestedPort';
+      _portInfo = _t('srv.orphanKilled', {'port': '$requestedPort'});
       return requestedPort;
     }
 
     for (var bump = 1; bump <= maxBump; bump++) {
       final candidate = requestedPort + bump;
       if (await _isPortAvailable(candidate)) {
-        _portInfo = '原端口 $requestedPort 被其他程序占用，已切换到 $candidate';
+        _portInfo = _t('srv.portBumped', {
+          'from': '$requestedPort',
+          'to': '$candidate',
+        });
         return candidate;
       }
     }
     throw Exception(
-      '端口 $requestedPort..${requestedPort + maxBump} 全部被占用，请手动指定一个空闲端口',
+      _t('srv.portsExhausted', {
+        'range': '$requestedPort..${requestedPort + maxBump}',
+      }),
     );
   }
 
-  /// 强制清理占用端口的 dufs 孤儿进程
+  /// 强制清理占用端口的 dufs 孤儿进程。
+  ///
+  /// Android 限制：没有 root 拿不到端口→PID 映射（lsof/ss 不可用），只能
+  /// 按 cmdline 匹配杀所有 libdufs.so 进程——多个 FileInfra 实例并存的
+  /// 场景会误杀，接受此权衡（桌面走 FFI 进程内无孤儿，iOS 无从下手）。
   Future<void> killOrphanOnPort(int port) async {
     try {
-      if (Platform.isAndroid) {
-        await Process.run('pkill', [
-          '-f',
-          'libdufs.so',
-        ]).catchError((_) => ProcessResult(0, 1, '', ''));
-      } else if (Platform.isLinux || Platform.isMacOS) {
-        final r = await Process.run('lsof', [
-          '-ti',
-          ':$port',
-        ]).catchError((_) => ProcessResult(0, 1, '', ''));
-        final pids = r.stdout.toString().trim().split('\n');
-        for (final pid in pids) {
-          if (pid.isEmpty) continue;
-          final cmd = await Process.run('ps', [
-            '-p',
-            pid,
-            '-o',
-            'comm=',
-          ]).catchError((_) => ProcessResult(0, 1, '', ''));
-          if (cmd.stdout.toString().toLowerCase().contains('dufs')) {
-            _log('Killing orphan dufs PID=$pid on port $port');
-            await Process.run('kill', [
-              pid,
-            ]).catchError((_) => ProcessResult(0, 1, '', ''));
-          }
-        }
-      }
-      _log('Cleaned up orphan on port $port');
+      await Process.run('pkill', [
+        '-f',
+        'libdufs.so',
+      ]).catchError((_) => ProcessResult(0, 1, '', ''));
+      _log('Cleaned up orphan dufs (pkill libdufs.so), port hint=$port');
     } catch (e) {
       _log('Failed to clean orphan on port $port: $e');
     }
@@ -219,7 +224,17 @@ class DufsService extends ChangeNotifier {
   }
 
   Future<void> startServer(ServerConfig config) async {
-    if (_isRunning) return;
+    if (_isRunning || _isStarting) return;
+    _isStarting = true;
+    try {
+      await _startServerLocked(config);
+    } finally {
+      _isStarting = false;
+    }
+  }
+
+  Future<void> _startServerLocked(ServerConfig config) async {
+    _lang = config.language;
     await _prepareLogFile();
     if (config.path.isEmpty) {
       _error = 'No directory';
@@ -247,7 +262,7 @@ class DufsService extends ChangeNotifier {
       }
     }
     // Validate permission consistency
-    final permError = config.validatePermissions();
+    final permError = config.validatePermissions(config.language);
     if (permError != null) {
       _error = permError;
       notifyListeners();
@@ -278,7 +293,7 @@ class DufsService extends ChangeNotifier {
             await _ch.invokeMethod<bool>('isStorageGranted') ?? false;
         _log('MANAGE_EXTERNAL_STORAGE granted: $granted');
         if (!granted) {
-          _error = '需要开启"所有文件访问权限"才能正常列出文件。请在系统设置中开启后重试。';
+          _error = _l10n.t('srv.storagePermNeeded');
           notifyListeners();
           await _ch.invokeMethod('requestStorage');
           return;
@@ -311,7 +326,8 @@ class DufsService extends ChangeNotifier {
         }
         if (serviceFailed || info == null || info['isRunning'] != true) {
           final svcError = (info?['error'] as String?) ?? '';
-          _error = '服务启动失败${svcError.isNotEmpty ? ': $svcError' : ''}';
+          _error = '${_l10n.t('srv.startFailed')}'
+              '${svcError.isNotEmpty ? ': $svcError' : ''}';
           _isRunning = false;
           _activePort = 0;
           notifyListeners();
@@ -351,6 +367,13 @@ class DufsService extends ChangeNotifier {
       _startLogFilePolling();
       notifyListeners();
     } catch (e) {
+      // FFI 已起来的情况下不能只清状态：stopServer 会因 !_isRunning 拒停，
+      // 服务器会占着端口滞留到进程退出。
+      if (_useFfi && _dufsFfi.isLoaded && _dufsFfi.isRunning()) {
+        try {
+          _dufsFfi.stop();
+        } catch (_) {}
+      }
       _error = 'Start failed: $e';
       _isRunning = false;
       _activePort = 0;
@@ -430,8 +453,30 @@ class DufsService extends ChangeNotifier {
       throw Exception('dufs FFI start returned $ret');
     }
     _log('dufs FFI start returned 0 (success)');
-    // Give the server a moment to bind
-    await Future.delayed(const Duration(milliseconds: 500));
+    // 验证端口真的绑上了：_isPortAvailable 的探测与本启动之间存在 TOCTOU，
+    // 端口可能被抢；dufs_start 返回 0 只代表参数解析/任务派发成功。
+    if (!await _waitPortReady(port) || !_dufsFfi.isRunning()) {
+      try {
+        _dufsFfi.stop();
+      } catch (_) {}
+      throw Exception(_t('srv.notListening', {'port': '$port'}));
+    }
+  }
+
+  /// 轮询本机端口直到可连接。返回 false 即超时（默认 3s）。
+  Future<bool> _waitPortReady(int port,
+      {Duration timeout = const Duration(seconds: 3)}) async {
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      try {
+        final s = await Socket.connect(InternetAddress.loopbackIPv4, port,
+            timeout: const Duration(milliseconds: 300));
+        s.destroy();
+        return true;
+      } catch (_) {}
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
+    return false;
   }
 
   // ==================== Start dufs process (iOS) ====================
@@ -439,25 +484,56 @@ class DufsService extends ChangeNotifier {
     final exeDir = File(Platform.resolvedExecutable).parent.path;
     final binPath = p.join(exeDir, 'dufs');
     if (!await File(binPath).exists()) {
-      throw Exception('dufs 服务组件缺失，请重新安装应用。路径: $binPath');
+      throw Exception(_t('srv.dufsMissing', {'path': binPath}));
     }
     final args = _buildArgs(config, port);
     final workDir = config.shareSingleFile
         ? p.dirname(config.path)
         : config.path;
     _log('dufs: $binPath ${_redactedArgs(args).join(' ')}');
-    _process = await Process.start(binPath, args, workingDirectory: workDir);
-    _process!.stdout.listen((d) {
+    final proc = await Process.start(binPath, args, workingDirectory: workDir);
+    _process = proc;
+    _processExitCode = null;
+    // 监听子进程退出：秒死（参数错/端口被抢）要在 UI 标记失败，运行中死掉
+    // 要收回"运行中"状态——否则界面对着一个死 URL 显示在线。
+    proc.exitCode.then((code) => _onProcessDied(proc, code));
+    proc.stdout.listen((d) {
       final line = String.fromCharCodes(d).trim();
       _log('out: $line');
       _trackActivity(line);
     });
-    _process!.stderr.listen((d) {
+    proc.stderr.listen((d) {
       final line = String.fromCharCodes(d).trim();
       _log('err: $line');
       _trackActivity(line);
     });
     await Future.delayed(const Duration(milliseconds: 300));
+    if (_processExitCode != null) {
+      throw Exception(
+        _t('srv.exitedDuringStart', {'code': '$_processExitCode'}),
+      );
+    }
+  }
+
+  void _onProcessDied(Process proc, int code) {
+    if (_process != proc) return;
+    _process = null;
+    _processExitCode = code;
+    if (!_isRunning) return;
+    _error = _t('srv.exitedUnexpectedly', {'code': '$code'});
+    _isRunning = false;
+    _activePort = 0;
+    _serverUrl = null;
+    _totalRequests = 0;
+    _lastActivity = null;
+    _lastActivityAt = null;
+    _allAddresses = [];
+    _allInterfaceNames = [];
+    _transferLogs.clear();
+    _logFileTimer?.cancel();
+    _logFileTimer = null;
+    _log('dufs process died unexpectedly (code $code)');
+    notifyListeners();
   }
 
   /// 解析 dufs 输出行，更新请求计数和日志列表。
@@ -551,11 +627,30 @@ class DufsService extends ChangeNotifier {
           if (trimmed.isNotEmpty && _ingestLine(trimmed)) changed = true;
         }
         if (changed) notifyListeners();
+        // F3 缓解：内容已消化，超过上限即截断（dufs 追加写会从 0 续写），
+        // 防单个长分享会话把临时目录写爆。
+        if (length > _kMaxLogBytes) {
+          _overCap = true;
+        }
       } finally {
         await raf.close();
       }
+      if (_overCap) {
+        _overCap = false;
+        _logFilePosition = 0;
+        _logFileRemainder = '';
+        final w = await file.open(mode: FileMode.writeOnly);
+        try {
+          await w.truncate(0);
+        } finally {
+          await w.close();
+        }
+      }
     } catch (_) {}
   }
+
+  /// _readLogFile 内部跨 try/finally 的截断信号。
+  bool _overCap = false;
 
   Future<void> stopServer() async {
     if (!_isRunning) return;
@@ -563,12 +658,18 @@ class DufsService extends ChangeNotifier {
       // FFI mode: stop the in-process server
       _dufsFfi.stop();
       // Wait for the server to release the port (accept() may be blocking)
+      var released = false;
       for (int i = 0; i < 20; i++) {
         await Future.delayed(const Duration(milliseconds: 200));
-        if (!_dufsFfi.isRunning()) break;
+        if (!_dufsFfi.isRunning()) {
+          released = true;
+          break;
+        }
       }
-      // Extra delay for OS to fully release the port (TIME_WAIT on Windows)
-      await Future.delayed(const Duration(milliseconds: 800));
+      // 已释放就不用再等；Windows 上端口常滞留 TIME_WAIT，额外等一段
+      if (!released || Platform.isWindows) {
+        await Future.delayed(const Duration(milliseconds: 800));
+      }
     } else if (_process != null) {
       // Process mode (iOS): kill child process
       _process!.kill();
@@ -576,6 +677,7 @@ class DufsService extends ChangeNotifier {
         await _process!.exitCode.timeout(const Duration(seconds: 2));
       } catch (_) {}
       _process = null;
+      _processExitCode = null;
     }
     if (Platform.isAndroid) {
       _ch.invokeMethod('stopForegroundService').catchError((_) {});

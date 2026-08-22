@@ -28,13 +28,20 @@ fi
 DUFS_SRC="/tmp/dufs-src-${DUFS_VERSION}"
 # Reuse a cached checkout only if it's a complete clone of the pinned ref. A
 # partial tree from an interrupted run (or a corrupt one) must be re-cloned,
-# otherwise it gets silently reused and the build fails in confusing ways. The
-# tree is intentionally dirtied later by the FFI shim copy, so require only a
-# valid HEAD + Cargo.toml here, not a clean working tree.
+# otherwise it gets silently reused and the build fails in confusing ways.
 if [ -d "$DUFS_SRC/.git" ] \
    && git -C "$DUFS_SRC" rev-parse --verify -q HEAD >/dev/null 2>&1 \
    && [ -f "$DUFS_SRC/Cargo.toml" ]; then
-  echo "Reusing cached dufs checkout: $DUFS_SRC"
+  # 复用时也强制对齐 pin 的 tag：个人 fork 存在同名 re-tag 的可能，且树
+  # 会被下面的 FFI shim 拷贝弄脏——fetch（--force 覆盖本地 tag）+ checkout
+  # -f 一并处理。fetch 失败（网络）则整树重克隆。
+  echo "Refreshing cached dufs checkout to $DUFS_VERSION: $DUFS_SRC"
+  if ! git -C "$DUFS_SRC" fetch --depth 1 --force origin \
+        "refs/tags/${DUFS_VERSION}:refs/tags/${DUFS_VERSION}" 2>/dev/null \
+     || ! git -C "$DUFS_SRC" checkout -f "$DUFS_VERSION" >/dev/null 2>&1; then
+    rm -rf "$DUFS_SRC"
+    git clone --depth 1 --branch "$DUFS_VERSION" "$DUFS_REPO" "$DUFS_SRC"
+  fi
 else
   rm -rf "$DUFS_SRC"
   git clone --depth 1 --branch "$DUFS_VERSION" "$DUFS_REPO" "$DUFS_SRC"

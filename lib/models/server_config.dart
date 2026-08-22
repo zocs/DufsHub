@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -125,16 +126,31 @@ class ServerConfig {
     renderTryIndex: json['renderTryIndex'] as bool? ?? false,
   );
 
-  /// 从 SharedPreferences 加载配置
+  /// 从 SharedPreferences 加载配置。
+  ///
+  /// 此方法在 runApp 之前执行，任何异常（损坏的 JSON、Linux 无 keyring 时
+  /// secure storage 抛错）都会白屏启动——所有失败路径都降级为默认值/无凭据，
+  /// 而不是向上抛。
   static Future<ServerConfig> load() async {
     final prefs = await SharedPreferences.getInstance();
     final jsonStr = prefs.getString('server_config');
-    final json = jsonStr != null
-        ? jsonDecode(jsonStr) as Map<String, dynamic>
-        : null;
+    Map<String, dynamic>? json;
+    if (jsonStr != null) {
+      try {
+        json = jsonDecode(jsonStr) as Map<String, dynamic>;
+      } catch (e) {
+        debugPrint('server_config JSON corrupt, falling back to defaults: $e');
+      }
+    }
     final config = json != null ? ServerConfig.fromJson(json) : ServerConfig();
     final legacyAuth = json?['auth'] as String?;
-    final secureAuth = await _secureStorage.read(key: _authStorageKey);
+    String? secureAuth;
+    try {
+      secureAuth = await _secureStorage.read(key: _authStorageKey);
+    } catch (e) {
+      // secure storage 不可用（无 keyring 等）≠ 有凭据，按无凭据处理
+      debugPrint('secure storage read failed: $e');
+    }
     config.auth = secureAuth ?? legacyAuth;
     // Only migrate legacy → secure storage when secure storage doesn't already
     // have a value. Otherwise we'd overwrite a fresh credential set in the new
@@ -142,10 +158,14 @@ class ServerConfig {
     if (secureAuth == null &&
         legacyAuth != null &&
         legacyAuth.isNotEmpty) {
-      await _secureStorage.write(key: _authStorageKey, value: legacyAuth);
-      // Strip the legacy 'auth' field from SharedPreferences so we don't keep
-      // re-migrating on every load (and so the credential isn't double-stored).
-      await prefs.setString('server_config', jsonEncode(config.toJson()));
+      try {
+        await _secureStorage.write(key: _authStorageKey, value: legacyAuth);
+        // Strip the legacy 'auth' field from SharedPreferences so we don't keep
+        // re-migrating on every load (and so the credential isn't double-stored).
+        await prefs.setString('server_config', jsonEncode(config.toJson()));
+      } catch (e) {
+        debugPrint('auth migration skipped: $e');
+      }
     }
     return config;
   }
@@ -191,10 +211,18 @@ class ServerConfig {
     allowSymlink = false;
   }
 
-  /// 校验权限字段一致性，返回冲突描述（null = 无冲突）
-  String? validatePermissions() {
+  /// 校验权限字段一致性，返回冲突描述（null = 无冲突）。
+  /// 文案按 UI 语言本地化（zh / zhTW / en，默认 zh）。
+  String? validatePermissions([String language = 'zh']) {
     if (readonly && (allowUpload || allowDelete || allowArchive)) {
-      return 'readonly 模式下不允许开启上传/删除/归档权限';
+      switch (language) {
+        case 'en':
+          return 'Upload/delete/archive cannot be enabled in readonly mode';
+        case 'zhTW':
+          return '唯讀模式下不允許開啟上傳/刪除/歸檔權限';
+        default:
+          return 'readonly 模式下不允许开启上传/删除/归档权限';
+      }
     }
     return null;
   }

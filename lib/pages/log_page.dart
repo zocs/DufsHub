@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../models/server_config.dart';
@@ -262,7 +263,7 @@ class LogPage extends StatelessWidget {
   /// 点击记录 → 用系统关联程序打开对应的本地文件
   Future<void> _openEntry(BuildContext context, TransferLog entry) async {
     final messenger = ScaffoldMessenger.of(context);
-    final target = _resolveTarget(entry.path);
+    final target = resolveTarget(entry.path, config.path);
     if (target == null) {
       messenger.showSnackBar(SnackBar(content: Text(l10n.t('log.fileGone'))));
       return;
@@ -280,8 +281,13 @@ class LogPage extends StatelessWidget {
   /// 把日志里的请求路径映射回磁盘绝对路径。
   /// 单文件分享时所有请求都指向被分享的那个文件；目录分享时按候选
   /// （原样 → 去 query → URL 解码）取第一个真实存在的路径。
-  String? _resolveTarget(String reqPath) {
-    final root = config.path;
+  ///
+  /// 防逃逸两道闸：① 拒绝任何 `..` 段（`File.uri` 不会规范化点段，
+  /// 仅靠前缀比较挡不住 `/share/../x` 与 `%2e%2e%2f` 解码形式）；
+  /// ② canonicalize 后做带分隔符的前缀比较（顺带覆盖符号链接指向
+  /// 根外的情况——代价是 allowSymlink 分享里点击外链文件会被拒，
+  /// 安全优先）。
+  static String? resolveTarget(String reqPath, String root) {
     if (root.isEmpty) return null;
     if (FileSystemEntity.typeSync(root) == FileSystemEntityType.file) {
       return root;
@@ -294,15 +300,16 @@ class LogPage extends StatelessWidget {
         candidates.add(Uri.decodeComponent(c));
       } catch (_) {}
     }
-    final rootPrefix = Directory(root).absolute.uri.toString();
+    final rootAbs = p.canonicalize(root);
     for (final c in candidates) {
       final rel = c.startsWith('/') ? c.substring(1) : c;
-      final full = File('$root/$rel').absolute;
-      // 防 ../ 逃出分享根
-      if (!full.uri.toString().startsWith(rootPrefix)) continue;
-      if (FileSystemEntity.typeSync(full.path) !=
-          FileSystemEntityType.notFound) {
-        return full.path;
+      if (rel.split(RegExp(r'[/\\]')).contains('..')) continue;
+      final full = p.canonicalize(p.join(rootAbs, rel));
+      if (full != rootAbs && !full.startsWith('$rootAbs${p.separator}')) {
+        continue;
+      }
+      if (FileSystemEntity.typeSync(full) != FileSystemEntityType.notFound) {
+        return full;
       }
     }
     return null;

@@ -1,6 +1,7 @@
 package cc.merr.fileinfra
 
 import android.app.*
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
@@ -12,12 +13,17 @@ import java.net.Socket
 
 class DufsForegroundService : Service() {
 
+    @Volatile
     private var dufsProcess: Process? = null
 
     companion object {
         private const val TAG = "fileinfra"
         private const val CHANNEL_ID = "fileinfra_server"
         private const val NOTIFICATION_ID = 1001
+        private const val PREFS = "fileinfra_native"
+
+        const val ACTION_START = "cc.merr.fileinfra.action.START"
+        const val ACTION_STOP = "cc.merr.fileinfra.action.STOP"
 
         @Volatile
         var isRunning = false
@@ -31,6 +37,54 @@ class DufsForegroundService : Service() {
         @Volatile
         var lastError: String? = null
             private set
+
+        /// 启动代数：每次 start/stop/timeout 递增。启动 worker 持有自己
+        /// 的代数提交结果，发现已被更新的操作超越就丢弃（并杀掉自己
+        /// 的子进程）——避免慢启动的失败清理误杀后来者的子进程。
+        @Volatile
+        var startGeneration = 0
+            private set
+
+        /// 让快捷磁贴直接用 App 上次成功下发的一组启动参数重启服务
+        ///（App 未运行时 Dart 侧不可达）。args 含 --auth 明文，落点是
+        /// app-private SharedPreferences（仅本 uid 可读）；运行中子进程的
+        /// /proc/<pid>/cmdline 本就含同样的值，不降低现有暴露面。
+        fun readLastLaunch(context: Context): Intent? {
+            return try {
+                val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                val port = prefs.getInt("port", 0)
+                val path = prefs.getString("path", null) ?: return null
+                if (port == 0 || path.isEmpty()) return null
+                val args = ArrayList<String>()
+                val arr = org.json.JSONArray(prefs.getString("args", "[]"))
+                for (i in 0 until arr.length()) args.add(arr.getString(i))
+                Intent(context, DufsForegroundService::class.java)
+                    .setAction(ACTION_START)
+                    .putExtra("port", port)
+                    .putExtra("path", path)
+                    .putExtra("args", args.toTypedArray())
+                    .putExtra("lang", prefs.getString("lang", "en") ?: "en")
+            } catch (_: Exception) {
+                null
+            }
+        }
+
+        /// 通知/磁贴侧的停止入口。startForegroundService 语义下
+        /// onStartCommand 必须调 startForeground（ACTION_STOP 分支已保证），
+        /// 退回 startService 仅在两者都失败时放弃。
+        fun requestStop(context: Context) {
+            val i = Intent(context, DufsForegroundService::class.java).setAction(ACTION_STOP)
+            try {
+                context.startForegroundService(i)
+            } catch (e: Exception) {
+                Log.w(TAG, "startForegroundService(STOP) failed: ${e.message}")
+                try {
+                    context.startService(i)
+                } catch (e2: Exception) {
+                    Log.w(TAG, "startService(STOP) failed: ${e2.message}")
+                }
+            }
+        }
     }
 
     override fun onCreate() {
@@ -41,60 +95,174 @@ class DufsForegroundService : Service() {
     private val startLock = Object()
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val action = intent?.action ?: ACTION_START
+        if (action == ACTION_STOP) {
+            handleStop()
+            return START_NOT_STICKY
+        }
+
         val port = intent?.getIntExtra("port", 0) ?: 0
         val path = intent?.getStringExtra("path") ?: ""
         val args = intent?.getStringArrayExtra("args") ?: emptyArray()
         val lang = intent?.getStringExtra("lang") ?: "en"
 
+        // Clear the previous run's failure at entry (before the lock): Dart's
+        // start-flow poll reads this field within ~200ms of dispatch, and a
+        // stale error from run A used to fail run B's poll (TOCTOU).
+        lastError = null
+
         if (port == 0 || path.isEmpty()) {
             Log.w(TAG, "Invalid start request: port=$port path=$path")
-            stopSelf()
+            stopWithForegroundContract()
             return START_NOT_STICKY
         }
 
+        // Main thread does only quick work: dedup check, foreground promotion,
+        // old-child kill, intent dispatch to a worker. The spawn + port probe
+        // (up to ~4s) runs off main — it used to block onStartCommand via
+        // Future.get(5s), freezing the UI and queueing every method-channel
+        // reply behind it.
+        val gen: Int
         synchronized(startLock) {
             if (isRunning && port == currentPort && path == currentPath) {
                 Log.d(TAG, "Already running on port=$port, skip")
-                return START_STICKY
+                return START_REDELIVER_INTENT
             }
 
+            startGeneration++
+            gen = startGeneration
             killDufs()
+            persistLaunch(port, path, args, lang)
 
             val notification = buildNotification(port, path, lang)
             // Android 14+ (API 34) requires the 3-arg startForeground with an
-            // explicit service type; the manifest already declares
-            // android:foregroundServiceType="dataSync". Calling the 2-arg
-            // overload on API 34+ throws MissingForegroundServiceTypeException
-            // and the service crashes on start.
+            // explicit service type. We use SPECIAL_USE (declared in the
+            // manifest with PROPERTY_SPECIAL_USE_FGS_SUBTYPE): dataSync would
+            // hit Android 15+'s 6h/24h budget and hard-kill the app via
+            // RemoteServiceException on timeout; a sideloaded local file
+            // server fits the special-use category.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 startForeground(
                     NOTIFICATION_ID,
                     notification,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
                 )
             } else {
                 startForeground(NOTIFICATION_ID, notification)
             }
+        }
 
-            lastError = null
-            val success = startDufs(port, path, args)
-            if (!success) {
-                Log.e(TAG, "Failed to start dufs, stopping service")
-                stopForeground(STOP_FOREGROUND_REMOVE)
-                stopSelf()
-                return START_NOT_STICKY
+        Thread {
+            val proc = startDufs(port, path, args)
+            synchronized(startLock) {
+                if (gen != startGeneration) {
+                    // A newer start/stop superseded us — kill OUR child too:
+                    // the newer gen's killDufs() may have run before this
+                    // child was even spawned, leaving it orphaned otherwise.
+                    Log.w(TAG, "start gen=$gen superseded, killing stray child")
+                    killProcess(proc)
+                } else if (proc != null) {
+                    currentPort = port
+                    currentPath = path
+                    isRunning = true
+                    Log.d(TAG, "Service started: port=$port path=$path")
+                } else {
+                    Log.e(TAG, "Failed to start dufs, stopping service (gen=$gen)")
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
+                }
             }
+            DufsQsTile.requestUpdate(this)
+        }.start()
 
-            currentPort = port
-            currentPath = path
-            isRunning = true
+        // START_REDELIVER_INTENT: after a system kill the original start
+        // intent (port/path/args) is redelivered and the server revives —
+        // START_STICKY redelivers a null intent and used to stopSelf().
+        return START_REDELIVER_INTENT
+    }
 
-            Log.d(TAG, "Service started: port=$port path=$path")
-            return START_STICKY
+    private fun handleStop() {
+        // The service may have been (re)started via startForegroundService
+        // (Dart stop path is stopService, but the notification stop-action
+        // and the QS tile both use startForegroundService). Satisfy the
+        // startForeground contract before stopping so the system never
+        // raises "did not then call Service.startForeground()".
+        startForegroundQuietly()
+        synchronized(startLock) {
+            startGeneration++
+            lastError = null
+            killDufs()
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        }
+        DufsQsTile.requestUpdate(this)
+    }
+
+    /// START_REDELIVER_INTENT re-dispatch and the invalid-argument path can
+    /// both arrive without the service having called startForeground in this
+    /// process lifetime; call it with a minimal notification then stop.
+    private fun stopWithForegroundContract() {
+        startForegroundQuietly()
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+    }
+
+    private fun startForegroundQuietly() {
+        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(this, CHANNEL_ID)
+        } else {
+            @Suppress("DEPRECATION")
+            Notification.Builder(this)
+        }
+        val notification = builder
+            .setContentTitle("FileInfra")
+            .setSmallIcon(R.drawable.ic_stat_notify)
+            .setOngoing(true)
+            .build()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
         }
     }
 
-    private fun startDufs(port: Int, path: String, args: Array<String>): Boolean {
+    /// Safety net for FGS budget timeouts on types that have them (we ship
+    /// specialUse, which has none — keep this so a future type change fails
+    /// soft instead of crashing with RemoteServiceException).
+    override fun onTimeout(fgsType: Int, startId: Int) {
+        Log.w(TAG, "FGS timeout (type=$fgsType startId=$startId), stopping gracefully")
+        synchronized(startLock) {
+            startGeneration++
+            lastError = "Foreground service hit its system time limit and was stopped"
+            killDufs()
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        }
+        DufsQsTile.requestUpdate(this)
+    }
+
+    private fun persistLaunch(port: Int, path: String, args: Array<String>, lang: String) {
+        try {
+            val arr = org.json.JSONArray()
+            args.forEach { arr.put(it) }
+            getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+                .putInt("port", port)
+                .putString("path", path)
+                .putString("args", arr.toString())
+                .putString("lang", lang)
+                .apply()
+        } catch (e: Exception) {
+            Log.w(TAG, "persistLaunch failed: ${e.message}")
+        }
+    }
+
+    /// Runs on a worker thread. Only touches its own child handle; global
+    /// state (isRunning/currentPort/...) is committed by the caller under
+    /// startLock, gated on the start generation.
+    /// Returns the child process on success, null on failure (own child
+    /// already killed on failure paths).
+    private fun startDufs(port: Int, path: String, args: Array<String>): Process? {
+        var proc: Process? = null
         return try {
             val nativeLibDir = applicationInfo.nativeLibraryDir
             val dufsBin = "$nativeLibDir/libdufs.so"
@@ -132,62 +300,70 @@ class DufsForegroundService : Service() {
             pb.redirectErrorStream(false)
             pb.redirectError(errLog)
             pb.redirectOutput(outLog)
-            dufsProcess = pb.start()
+            proc = pb.start()
+            dufsProcess = proc
 
-            val ready = waitForServerReady(port)
+            val ready = waitForServerReady(proc, port)
             if (!ready) {
                 // Scrub the --auth credential from dufs's own stderr before it
-                // is surfaced to logcat / the UI: clap echoes offending args on
-                // a parse error, and the arg-log redaction above doesn't cover
-                // dufs's own output.
+                // is surfaced to logcat / the UI / the log FILE (clap echoes
+                // offending args on a parse error; the file keeps it until the
+                // next start otherwise).
                 val authVal = fullArgs.zipWithNext().firstOrNull { it.first == "--auth" }?.second
                 var errOutput = try { errLog.readText().take(500) } catch (_: Exception) { "" }
-                if (!authVal.isNullOrEmpty()) errOutput = errOutput.replace(authVal, "***@/:rw")
-                val alive = isProcessAlive()
+                if (!authVal.isNullOrEmpty()) {
+                    errOutput = errOutput.replace(authVal, "***@/:rw")
+                    try { errLog.writeText(errOutput) } catch (_: Exception) {}
+                }
+                val alive = isAlive(proc)
                 lastError = if (!alive) {
                     "dufs process exited during startup${if (errOutput.isNotEmpty()) ": $errOutput" else ""}"
                 } else {
                     "dufs did not start listening on port $port${if (errOutput.isNotEmpty()) ": $errOutput" else ""}"
                 }
                 Log.e(TAG, lastError ?: "")
-                killDufs()
-                false
+                killProcess(proc)
+                if (dufsProcess === proc) dufsProcess = null
+                null
             } else {
                 Log.d(TAG, "dufs verified listening on port=$port")
-                true
+                proc
             }
         } catch (e: Exception) {
             lastError = "Failed to start dufs: ${e.message}"
             Log.e(TAG, lastError ?: "", e)
-            dufsProcess = null
-            false
+            // Kill via the local handle: nulling the shared field without
+            // destroying would orphan a live child no later killDufs() reach.
+            killProcess(proc)
+            if (proc != null && dufsProcess === proc) dufsProcess = null
+            null
         }
     }
 
-    private fun waitForServerReady(port: Int): Boolean {
-        // Socket.connect() on the main thread throws NetworkOnMainThreadException
-        // (Android API 11+ StrictMode). onStartCommand runs on main, so we offload
-        // the whole probe loop to a worker and block here on the result.
-        val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
-        return try {
-            executor.submit<Boolean> {
-                repeat(10) {
-                    if (!isProcessAlive()) return@submit false
-                    if (canConnectToPort(port)) return@submit true
-                    Thread.sleep(200)
-                }
-                canConnectToPort(port)
-            }.get(5, java.util.concurrent.TimeUnit.SECONDS)
-        } catch (_: Exception) {
-            false
-        } finally {
-            executor.shutdownNow()
+    private fun waitForServerReady(proc: Process, port: Int): Boolean {
+        // Runs on a worker thread already — probe inline, no executor hop.
+        repeat(10) {
+            // Connect FIRST, then verify OUR child is alive. A leftover
+            // orphan dufs may hold the port: the fresh child fails bind
+            // and exits within a few hundred ms, and a plain
+            // alive-then-connect check would validate the orphan during
+            // that window (hidden server, stale path/args). The settle
+            // delay lets a failed-bind child die before we commit.
+            if (canConnectToPort(port)) {
+                if (!isAlive(proc)) return false
+                Thread.sleep(250)
+                return isAlive(proc) && canConnectToPort(port)
+            }
+            if (!isAlive(proc)) return false
+            Thread.sleep(200)
         }
+        return false
     }
 
-    private fun isProcessAlive(): Boolean {
+    private fun isAlive(proc: Process?): Boolean {
+        if (proc == null) return false
         return try {
-            dufsProcess?.exitValue()
+            proc.exitValue()
             false
         } catch (e: IllegalThreadStateException) {
             true
@@ -205,13 +381,18 @@ class DufsForegroundService : Service() {
         }
     }
 
-    private fun killDufs() {
+    private fun killProcess(proc: Process?) {
+        if (proc == null) return
         try {
-            dufsProcess?.destroy()
+            proc.destroy()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                try { dufsProcess?.destroyForcibly() } catch (_: Exception) {}
+                try { proc.destroyForcibly() } catch (_: Exception) {}
             }
         } catch (_: Exception) {}
+    }
+
+    private fun killDufs() {
+        killProcess(dufsProcess)
         dufsProcess = null
         isRunning = false
         currentPort = 0
@@ -222,7 +403,11 @@ class DufsForegroundService : Service() {
 
     override fun onDestroy() {
         Log.d(TAG, "Service destroying, stopping dufs")
-        killDufs()
+        synchronized(startLock) {
+            startGeneration++
+            killDufs()
+        }
+        DufsQsTile.requestUpdate(this)
         super.onDestroy()
     }
 
@@ -252,6 +437,12 @@ class DufsForegroundService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
+        val stopIntent = Intent(this, DufsForegroundService::class.java).setAction(ACTION_STOP)
+        val stopPendingIntent = PendingIntent.getService(
+            this, 1, stopIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
         val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Notification.Builder(this, CHANNEL_ID)
         } else {
@@ -263,17 +454,26 @@ class DufsForegroundService : Service() {
         // localize the user-visible notification here (passed in via the start
         // intent) rather than via Android string resources, which key off the
         // device locale.
-        val (title, text) = when (lang) {
-            "zh" -> "FileInfra 文件分享" to "服务运行中（端口 $port）"
-            "zhTW" -> "FileInfra 檔案分享" to "服務運行中（連接埠 $port）"
-            else -> "FileInfra File Sharing" to "Running (port $port)"
+        val (title, text, stopLabel) = when (lang) {
+            "zh" -> Triple("FileInfra 文件分享", "服务运行中（端口 $port）", "停止分享")
+            "zhTW" -> Triple("FileInfra 檔案分享", "服務運行中（連接埠 $port）", "停止分享")
+            else -> Triple("FileInfra File Sharing", "Running (port $port)", "Stop")
         }
 
         return builder
             .setContentTitle(title)
             .setContentText(text)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            // Alpha-only drawable: adaptive launcher mipmaps render as a washed
+            // gray square in the status bar.
+            .setSmallIcon(R.drawable.ic_stat_notify)
             .setContentIntent(pendingIntent)
+            .addAction(
+                Notification.Action.Builder(
+                    null,
+                    stopLabel,
+                    stopPendingIntent
+                ).build()
+            )
             .setOngoing(true)
             .build()
     }

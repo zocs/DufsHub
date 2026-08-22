@@ -3,6 +3,32 @@
 > 所有版本均可在 [GitHub Releases](https://github.com/zocs/fileinfra/releases) 下载。
 > All versions available at [GitHub Releases](https://github.com/zocs/fileinfra/releases).
 
+## [v0.5.1](https://github.com/zocs/fileinfra/releases/tag/v0.5.1) (2026-08-22)
+
+**中文：**
+- ✨ Android 新增快捷设置磁贴：不打开应用即可启/停文件分享（在下拉快捷开关的编辑面板里添加「FileInfra」磁贴）；首次使用前需在应用内完成一次配置，磁贴使用最近一次的分享参数。
+- ✨ Android 常驻通知增加「停止分享」按钮；并按 Android 13+ 规范请求通知权限，服务运行中不再被系统从通知栏隐藏。
+- 🔒 修复传输记录「点击打开」的路径校验可被 `../` 段（含 URL 编码形式）绕过的问题；现在打开目标被严格限制在分享目录内。
+- 🐛 Android 15+：前台服务类型由 `dataSync` 改为 `specialUse`。原类型受系统 6 小时/24 小时配额限制，超时后应用会被强制终止并崩溃；新类型无此配额，同时保留了超时优雅停止的兜底。
+- 🐛 Android 启动服务不再阻塞主线程最长约 4 秒（子进程启动与端口探测移到后台线程），启动期间界面与停止操作不再卡顿。
+- 🐛 修复启动探测可能把上一次崩溃残留的 dufs 进程误判为"已启动"的问题；残留进程占用端口时现在明确报错，而不是展示一个实际已失效的地址。
+- 🐛 桌面端启动后新增端口监听验证：端口在探测与启动之间被抢占时直接报错，不再展示无法访问的二维码。
+- 🐛 修复损坏的配置文件、或系统密钥库不可用（如 Linux 无 keyring）时应用启动白屏的问题，现降级为默认配置。
+- ⚡ 服务层状态与错误提示（端口被占自动切换、残留进程清理、启动失败原因等）补全英文/繁中翻译，不再混用硬编码中文。
+- 🛠 Release 附件新增 checksums.txt（SHA-256）；修复本地 Docker 构建镜像内的 Flutter 与 CI 不一致（镜像实际为 3.41.5，CI 为 3.47.0）；deb 包补齐 libsecret-1-0、libayatana-appindicator3-1 运行依赖。
+
+**English:**
+- ✨ Android: new Quick Settings tile — start/stop sharing without opening the app (add the "FileInfra" tile from the QS editor). Requires one in-app configuration pass; the tile then reuses the most recent share settings.
+- ✨ Android: the persistent notification gains a "Stop sharing" action, and notification permission is now requested per Android 13+ rules, so a running server is no longer hidden from the notification shade.
+- 🔒 Fixed tap-to-open on transfer records: path validation could be bypassed with `../` segments (raw or URL-encoded); opened targets are now strictly confined to the shared directory.
+- 🐛 Android 15+: foreground service type switched from `dataSync` to `specialUse`. The old type falls under the 6h/24h system budget — on expiry the app was force-stopped with a crash; the new type has no such budget, and a graceful-timeout fallback is kept in place.
+- 🐛 Android: starting the server no longer blocks the main thread for up to ~4 seconds (child-process spawn and port probing moved to a background thread); the UI and the stop button stay responsive during startup.
+- 🐛 Fixed startup probing occasionally validating a dufs process left over from a crashed run; a port held by a stale process now fails with an error instead of advertising an address that no longer works.
+- 🐛 Desktop: the port is now verified as listening after start — a port stolen between probe and startup surfaces an error instead of a QR code nobody can open.
+- 🐛 A corrupt config file or an unusable system keyring (e.g. no keyring on Linux) no longer white-screens the app at launch; it falls back to defaults.
+- ⚡ Server-layer status and error strings (auto port switch, orphan cleanup, startup failures) are now properly translated instead of hardcoded Chinese.
+- 🛠 Release artifacts now include a checksums.txt (SHA-256); fixed local Docker images building with Flutter 3.41.5 while CI used 3.47.0; the .deb now declares its libsecret-1-0 and libayatana-appindicator3-1 runtime dependencies.
+
 ## [v0.5.0](https://github.com/zocs/fileinfra/releases/tag/v0.5.0) (2026-08-15)
 
 **中文：**

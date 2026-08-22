@@ -87,7 +87,7 @@ jobs:
         run: |
           SO=android/app/src/main/jniLibs/arm64-v8a/libdufs.so
           [ -f "$SO" ] || { echo "::error::missing $SO"; exit 1; }
-          BAD=$(readelf -lW "$SO" | awk '/^  LOAD/ {print $NF}' | sort -u | grep -vF "${{ env.ANDROID_LIBDUFS_ALIGN }}" || true)
+          BAD=$(readelf -lW "$SO" | awk '/^  LOAD/ {print $NF}' | sort -u | grep -vxE "${{ env.ANDROID_LIBDUFS_ALIGN }}" || true)
           if [ -n "$BAD" ]; then
             echo "::error::libdufs.so LOAD alignment != ${{ env.ANDROID_LIBDUFS_ALIGN }}: got $BAD"
             echo "::error::Older Android (< API 35) dynamic linker mishandles 16KB-aligned binaries -> dufs binds but networking syscalls misbehave."
@@ -217,8 +217,9 @@ jobs:
       - uses: actions/checkout@v7
       - name: Install Flutter manually
         run: |
-          git clone --depth 1 --branch ${{ env.FLUTTER_VERSION }} https://github.com/flutter/flutter.git "$HOME/flutter" || \
-            git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "$HOME/flutter"
+          # No silent stable fallback: a silently different toolchain would
+          # ship an ARM64 artifact built unlike every other platform.
+          git clone --depth 1 --branch ${{ env.FLUTTER_VERSION }} https://github.com/flutter/flutter.git "$HOME/flutter"
           export PATH="$HOME/flutter/bin:$HOME/flutter/bin/cache/dart-sdk/bin:$PATH"
           echo "$HOME/flutter/bin" >> "$GITHUB_PATH"
           echo "$HOME/flutter/bin/cache/dart-sdk/bin" >> "$GITHUB_PATH"
@@ -345,17 +346,33 @@ jobs:
           } > release_body.md
           echo "----- release_body.md -----"
           cat release_body.md
+      - name: Generate checksums
+        run: |
+          # F10：release 附件附 sha256 校验清单。只覆盖实际发布的产物类型
+          #（download-artifact 会把未发布的 iOS 包解包成目录树，全量 find
+          # 会把几百个内部文件也写进清单）。
+          cd artifacts
+          find . -type f \( \
+            -name '*.AppImage' -o -name '*.deb' -o -name '*.rpm' -o \
+            -name '*.tar.gz' -o -name '*.apk' -o -name '*.exe' -o \
+            -name '*.dmg' -o -name '*-windows-x64.zip' -o \
+            -name '*-macos-arm64.zip' \) -print0 \
+            | sort -z | xargs -0 sha256sum > checksums.txt
+          echo "----- checksums.txt -----"
+          cat checksums.txt
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           body_path: release_body.md
           files: |
+            artifacts/checksums.txt
             artifacts/**/*.AppImage
             artifacts/**/*.deb
             artifacts/**/*.rpm
             artifacts/**/*.tar.gz
             artifacts/**/*.apk
-            artifacts/**/*.zip
+            artifacts/**/*-windows-x64.zip
+            artifacts/**/*-macos-arm64.zip
             artifacts/**/*.exe
             artifacts/**/*.dmg
           generate_release_notes: true
