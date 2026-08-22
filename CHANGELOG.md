@@ -3,6 +3,16 @@
 > 所有版本均可在 [GitHub Releases](https://github.com/zocs/fileinfra/releases) 下载。
 > All versions available at [GitHub Releases](https://github.com/zocs/fileinfra/releases).
 
+## [v0.5.2](https://github.com/zocs/fileinfra/releases/tag/v0.5.2) (2026-08-23)
+
+**中文：**
+- 🐛 修复打包下载大目录时压缩包提前截断的问题：照片/视频等不可压缩文件组成的 GB 级目录，zip 流会在中途正常收尾（HTTP 层无错误），产出的压缩包缺少结尾目录、无法打开；小体积或文本为主的目录不受影响。根因是 dufs 核心依赖的 zip 归档库 async-deflate-zip 0.2.0 在网络背压下把 flate2 的"只吐缓冲、不进新输入"瞬态当作零字节写入返回，tokio 的 io::copy 将其判定为致命错误并中止拷贝。核心升至 v0.46.0-fix3（async-deflate-zip 0.4.0，该场景改为继续排空并重试）。
+- 本地验证：6.4 GB / 565 文件目录完整打包，unzip 全量 CRC 校验无错；修复前同类目录约 200 MB 处断流。
+
+**English:**
+- 🐛 Fixed folder zip downloads ending early: a multi-GB directory of poorly compressible files (photos, videos) produced an archive that terminated mid-stream with a clean HTTP end — no zip central directory, nothing to open — while small or text-heavy folders were unaffected. Root cause: async-deflate-zip 0.2.0 (the archive library behind the dufs core) returns a zero-byte write when flate2 flushes buffered output without consuming new input under network backpressure; tokio's io::copy treats that as a fatal WriteZero and aborts the copy. Core upgraded to v0.46.0-fix3 (async-deflate-zip 0.4.0, which drains and retries in that case).
+- Verified locally: a 6.4 GB / 565-file tree zips end to end with a full unzip CRC pass; the same tree cut off at ~200 MB before the fix.
+
 ## [v0.5.1](https://github.com/zocs/fileinfra/releases/tag/v0.5.1) (2026-08-22)
 
 **中文：**

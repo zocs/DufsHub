@@ -7,7 +7,7 @@
 # The output is a .so / .dll / .dylib that exposes dufs_start / dufs_stop / dufs_is_running.
 set -euo pipefail
 
-DUFS_VERSION="v0.46.0-fix2"
+DUFS_VERSION="v0.46.0-fix3"
 DUFS_REPO="https://github.com/zocs/dufs.git"
 PLATFORM=${1:?Usage: $0 <platform>}
 

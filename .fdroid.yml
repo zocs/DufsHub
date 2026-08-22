@@ -30,8 +30,8 @@ RepoType: git
 Repo: https://github.com/zocs/fileinfra
 
 Builds:
-  - versionName: 0.5.1
-    versionCode: 46
+  - versionName: 0.5.2
+    versionCode: 47
     commit: 3be86d42f5056e87b04b218ab768b7a3c4767619
     sudo:
       - apt-get update
@@ -54,12 +54,12 @@ Builds:
       - .pub-cache
     build:
       - export PUB_CACHE="$(pwd)/.pub-cache"
-      - $$flutter$$/bin/flutter build apk --release --build-name=0.5.1 --build-number=46
+      - $$flutter$$/bin/flutter build apk --release --build-name=0.5.2 --build-number=47
     ndk: r27
 
 AllowedAPKSigningKeys: e4db9054ff7070e4bee3387e928e1388facfec0526da10e4510282e9d26aed6a
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 0.5.1
-CurrentVersionCode: 46
+CurrentVersion: 0.5.2
+CurrentVersionCode: 47
