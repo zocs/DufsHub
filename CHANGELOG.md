@@ -6,38 +6,36 @@
 ## [v0.5.2](https://github.com/zocs/fileinfra/releases/tag/v0.5.2) (2026-08-23)
 
 **中文：**
-- 🐛 修复打包下载大目录时压缩包提前截断的问题：照片/视频等不可压缩文件组成的 GB 级目录，zip 流会在中途正常收尾（HTTP 层无错误），产出的压缩包缺少结尾目录、无法打开；小体积或文本为主的目录不受影响。根因是 dufs 核心依赖的 zip 归档库 async-deflate-zip 0.2.0 在网络背压下把 flate2 的"只吐缓冲、不进新输入"瞬态当作零字节写入返回，tokio 的 io::copy 将其判定为致命错误并中止拷贝。核心升至 v0.46.0-fix3（async-deflate-zip 0.4.0，该场景改为继续排空并重试）。
-- 本地验证：6.4 GB / 565 文件目录完整打包，unzip 全量 CRC 校验无错；修复前同类目录约 200 MB 处断流。
+- 🐛 修复打包下载大目录时压缩包不完整的问题：以照片、视频为主的 GB 级目录，下载的 zip 会在中途无声结束、无法打开；小目录与文本目录不受影响。升级文件服务内核（dufs v0.46.0-fix3）修复。
 
 **English:**
-- 🐛 Fixed folder zip downloads ending early: a multi-GB directory of poorly compressible files (photos, videos) produced an archive that terminated mid-stream with a clean HTTP end — no zip central directory, nothing to open — while small or text-heavy folders were unaffected. Root cause: async-deflate-zip 0.2.0 (the archive library behind the dufs core) returns a zero-byte write when flate2 flushes buffered output without consuming new input under network backpressure; tokio's io::copy treats that as a fatal WriteZero and aborts the copy. Core upgraded to v0.46.0-fix3 (async-deflate-zip 0.4.0, which drains and retries in that case).
-- Verified locally: a 6.4 GB / 565-file tree zips end to end with a full unzip CRC pass; the same tree cut off at ~200 MB before the fix.
+- 🐛 Fixed folder zip downloads ending up incomplete: with large photo/video folders (GB-scale), the archive finished mid-download without any error and could not be opened; small and text-heavy folders were unaffected. Fixed by upgrading the file-server core (dufs v0.46.0-fix3).
 
 ## [v0.5.1](https://github.com/zocs/fileinfra/releases/tag/v0.5.1) (2026-08-22)
 
 **中文：**
-- ✨ Android 新增快捷设置磁贴：不打开应用即可启/停文件分享（在下拉快捷开关的编辑面板里添加「FileInfra」磁贴）；首次使用前需在应用内完成一次配置，磁贴使用最近一次的分享参数。
-- ✨ Android 常驻通知增加「停止分享」按钮；并按 Android 13+ 规范请求通知权限，服务运行中不再被系统从通知栏隐藏。
-- 🔒 修复传输记录「点击打开」的路径校验可被 `../` 段（含 URL 编码形式）绕过的问题；现在打开目标被严格限制在分享目录内。
-- 🐛 Android 15+：前台服务类型由 `dataSync` 改为 `specialUse`。原类型受系统 6 小时/24 小时配额限制，超时后应用会被强制终止并崩溃；新类型无此配额，同时保留了超时优雅停止的兜底。
-- 🐛 Android 启动服务不再阻塞主线程最长约 4 秒（子进程启动与端口探测移到后台线程），启动期间界面与停止操作不再卡顿。
-- 🐛 修复启动探测可能把上一次崩溃残留的 dufs 进程误判为"已启动"的问题；残留进程占用端口时现在明确报错，而不是展示一个实际已失效的地址。
-- 🐛 桌面端启动后新增端口监听验证：端口在探测与启动之间被抢占时直接报错，不再展示无法访问的二维码。
-- 🐛 修复损坏的配置文件、或系统密钥库不可用（如 Linux 无 keyring）时应用启动白屏的问题，现降级为默认配置。
-- ⚡ 服务层状态与错误提示（端口被占自动切换、残留进程清理、启动失败原因等）补全英文/繁中翻译，不再混用硬编码中文。
-- 🛠 Release 附件新增 checksums.txt（SHA-256）；修复本地 Docker 构建镜像内的 Flutter 与 CI 不一致（镜像实际为 3.41.5，CI 为 3.47.0）；deb 包补齐 libsecret-1-0、libayatana-appindicator3-1 运行依赖。
+- ✨ Android 新增快捷开关磁贴：不打开应用即可启/停文件分享（在下拉快捷开关的编辑面板里添加「FileInfra」；首次使用前需在应用内配置一次）。
+- ✨ Android 常驻通知增加「停止分享」按钮；并按新系统规范请求通知权限，服务运行时不再被系统从通知栏隐藏。
+- 🔒 修复传输记录「点击打开」可能打开分享目录之外文件的问题。
+- 🐛 Android 15+：修复长时间分享约 6 小时后应用被系统强制关闭的问题。
+- ⚡ Android：启动服务期间界面不再卡顿，停止操作即时响应。
+- 🐛 修复启动时可能把残留的旧服务进程误判为「已启动」、展示失效地址的问题。
+- 🐛 桌面端：启动后若端口被抢占会直接报错，不再展示打不开的二维码。
+- 🐛 修复配置文件损坏或系统密钥库异常时启动白屏的问题。
+- 🐛 服务状态与错误提示补全英文/繁中翻译。
+- 🛠 Release 下载附 checksums.txt（SHA-256）；恢复 .rpm 安装包产出；deb 包补齐运行依赖。
 
 **English:**
-- ✨ Android: new Quick Settings tile — start/stop sharing without opening the app (add the "FileInfra" tile from the QS editor). Requires one in-app configuration pass; the tile then reuses the most recent share settings.
-- ✨ Android: the persistent notification gains a "Stop sharing" action, and notification permission is now requested per Android 13+ rules, so a running server is no longer hidden from the notification shade.
-- 🔒 Fixed tap-to-open on transfer records: path validation could be bypassed with `../` segments (raw or URL-encoded); opened targets are now strictly confined to the shared directory.
-- 🐛 Android 15+: foreground service type switched from `dataSync` to `specialUse`. The old type falls under the 6h/24h system budget — on expiry the app was force-stopped with a crash; the new type has no such budget, and a graceful-timeout fallback is kept in place.
-- 🐛 Android: starting the server no longer blocks the main thread for up to ~4 seconds (child-process spawn and port probing moved to a background thread); the UI and the stop button stay responsive during startup.
-- 🐛 Fixed startup probing occasionally validating a dufs process left over from a crashed run; a port held by a stale process now fails with an error instead of advertising an address that no longer works.
-- 🐛 Desktop: the port is now verified as listening after start — a port stolen between probe and startup surfaces an error instead of a QR code nobody can open.
-- 🐛 A corrupt config file or an unusable system keyring (e.g. no keyring on Linux) no longer white-screens the app at launch; it falls back to defaults.
-- ⚡ Server-layer status and error strings (auto port switch, orphan cleanup, startup failures) are now properly translated instead of hardcoded Chinese.
-- 🛠 Release artifacts now include a checksums.txt (SHA-256); fixed local Docker images building with Flutter 3.41.5 while CI used 3.47.0; the .deb now declares its libsecret-1-0 and libayatana-appindicator3-1 runtime dependencies.
+- ✨ Android: new Quick Settings tile — start/stop sharing without opening the app (add "FileInfra" from the tile editor; configure once in the app first).
+- ✨ Android: the persistent notification gains a "Stop sharing" action, and notification permission is now requested per current system rules, so a running server is no longer hidden from the shade.
+- 🔒 Fixed tap-to-open on transfer records possibly opening files outside the shared directory.
+- 🐛 Android 15+: fixed the app being force-closed by the system after about six hours of sharing.
+- ⚡ Android: the UI no longer stutters while the server starts, and Stop responds immediately.
+- 🐛 Fixed a leftover process from a previous run occasionally being reported as "running", advertising an address that no longer worked.
+- 🐛 Desktop: a port stolen between checks now fails with an error instead of showing a QR code nobody can open.
+- 🐛 A corrupt config file or broken system keyring no longer white-screens the app at launch.
+- 🐛 Server status and error messages are now translated (English/Traditional Chinese).
+- 🛠 Release downloads now include a checksums.txt (SHA-256); the .rpm package is back; the .deb declares its runtime dependencies.
 
 ## [v0.5.0](https://github.com/zocs/fileinfra/releases/tag/v0.5.0) (2026-08-15)
 
