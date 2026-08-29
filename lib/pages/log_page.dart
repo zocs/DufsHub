@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
+import '../constants.dart';
 import '../l10n/app_localizations.dart';
 import '../models/server_config.dart';
 import '../models/transfer_log.dart';
@@ -268,14 +269,50 @@ class LogPage extends StatelessWidget {
       messenger.showSnackBar(SnackBar(content: Text(l10n.t('log.fileGone'))));
       return;
     }
-    final result = await OpenFilex.open(target);
-    if (result.type != ResultType.done) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('${l10n.t('log.openFailed')}: ${result.message}'),
-        ),
-      );
+    final failure = await openLocalFile(target);
+    if (failure == null) return;
+    final String text;
+    switch (failure) {
+      case 'notFound':
+        text = l10n.t('log.fileGone');
+      case 'isDir':
+        text = l10n.t('log.isDir');
+      case 'noApp':
+        text = l10n.t('log.noApp');
+      default:
+        text = '${l10n.t('log.openFailed')}: $failure';
     }
+    messenger.showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  /// 用系统关联程序打开一个本地绝对路径，成功返回 null，否则返回机器可
+  /// 读的原因（notFound / isDir / noApp / 原始错误文本）。
+  ///
+  /// Android 走自有 channel：open_filex 在 Android 13+ 会先索要
+  /// READ_MEDIA_IMAGES/VIDEO/AUDIO，而清单里已按最小权限剥掉，再走它就会
+  /// 得到“Permission denied”。桌面（xdg-open / open / cmd start）与 iOS 仍用
+  /// open_filex。
+  static Future<String?> openLocalFile(String path) async {
+    if (Platform.isAndroid) {
+      try {
+        final r = await const MethodChannel(kMethodChannel)
+            .invokeMethod<String>('openFile', {'path': path});
+        switch (r) {
+          case 'done':
+            return null;
+          case 'notFound':
+          case 'isDir':
+          case 'noApp':
+            return r;
+          default:
+            return r ?? 'no result';
+        }
+      } on PlatformException catch (e) {
+        return e.message ?? e.code;
+      }
+    }
+    final result = await OpenFilex.open(path);
+    return result.type == ResultType.done ? null : result.message;
   }
 
   /// 把日志里的请求路径映射回磁盘绝对路径。

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  点击传输记录 → MainActivity.openFile 用这个 FileProvider 把文件交给系统
+  关联程序。分享目录由用户自选（内部存储 / 内存卡 / 任意挂载点），所以只能
+  用 root-path 覆盖全盘；这与被替换掉的 open_filex 行为一致，且访问面没有
+  变大：URI 权限是按每次 startActivity 的 FLAG_GRANT_READ_URI_PERMISSION
+  授予的，接收方拿到的只是那一个文件的临时读权限。
+-->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <root-path
+        name="root"
+        path="." />
+</paths>

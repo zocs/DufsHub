@@ -7,6 +7,13 @@ class AppLocalizations {
     return map[key] ?? key;
   }
 
+  /// 某语言已收录的键名（供语言完整性检查/测试使用）。
+  static Set<String> keysFor(String language) =>
+      _translations[language]?.keys.toSet() ?? const <String>{};
+
+  /// 全部语言代码。
+  static const List<String> supportedLanguages = ['zh', 'en', 'zhTW'];
+
   static const Map<String, Map<String, String>> _translations = {
     'zh': {
       'app.name': 'FileInfra',
@@ -70,6 +77,8 @@ class AppLocalizations {
       'log.copyPath': '已复制路径',
       'log.openFailed': '打开失败',
       'log.fileGone': '文件不存在或已被移动',
+      'log.isDir': '这是目录，请在浏览器里打开分享页面浏览',
+      'log.noApp': '本机没有能打开该类型的关联应用',
       'srv.orphanKilled': '检测到残留 dufs 进程，已结束并使用端口 {port}',
       'srv.portBumped': '原端口 {from} 被其他程序占用，已切换到 {to}',
       'srv.portsExhausted': '端口 {range} 全部被占用，请手动指定一个空闲端口',
@@ -79,6 +88,13 @@ class AppLocalizations {
       'srv.dufsMissing': 'dufs 服务组件缺失，请重新安装应用。路径: {path}',
       'srv.exitedDuringStart': 'dufs 进程启动后立即退出（代码 {code}）',
       'srv.exitedUnexpectedly': 'dufs 进程意外退出（代码 {code}）',
+      'srv.noDir': '请先选择要分享的目录',
+      'srv.fileGone': '分享的文件已不存在，可能被移动或删除',
+      'srv.parentGone': '文件所在目录已不存在',
+      'srv.dirGone': '分享目录已不存在，可能被移动或删除',
+      'srv.dirNotReadable': '系统拒绝读取该目录，浏览器只会收到 403 Forbidden，请换一个目录试试',
+      'srv.dirNotReadableAndroid': 'Android 10/EMUI 的分区存储不允许列出内存卡或 Android/data 下的目录：请改选内部存储的公共目录（如 Documents），或在系统设置授予「所有文件访问权限」',
+      'srv.fileNotReadable': '系统拒绝读取该文件，浏览器只会收到 403 Forbidden，请换一个位置试试',
       'settings.themeMode': '主题模式',
       'settings.themeSystem': '跟随系统',
       'settings.themeLight': '浅色',
@@ -175,6 +191,8 @@ class AppLocalizations {
       'log.copyPath': 'Path Copied',
       'log.openFailed': 'Failed to open',
       'log.fileGone': 'File no longer exists',
+      'log.isDir': 'That is a folder \u2014 browse it on the shared page instead',
+      'log.noApp': 'No installed app can handle this file type',
       'srv.orphanKilled':
           'Leftover dufs process found and stopped, using port {port}',
       'srv.portBumped': 'Port {from} was in use, switched to {to}',
@@ -188,6 +206,16 @@ class AppLocalizations {
           'dufs server component missing, please reinstall. Path: {path}',
       'srv.exitedDuringStart': 'dufs exited immediately after start (code {code})',
       'srv.exitedUnexpectedly': 'dufs exited unexpectedly (code {code})',
+      'srv.noDir': 'Pick a folder to share first',
+      'srv.fileGone': 'The shared file no longer exists (moved or deleted)',
+      'srv.parentGone': 'The folder containing that file no longer exists',
+      'srv.dirGone': 'The shared folder no longer exists (moved or deleted)',
+      'srv.dirNotReadable':
+          'The system refused to read this folder \u2014 browsers would only get "403 Forbidden". Try another folder',
+      'srv.dirNotReadableAndroid':
+          'Scoped storage on Android 10/EMUI cannot list removable-SD or Android/data paths: pick a public folder on internal storage (e.g. Documents), or grant All-Files Access in system settings',
+      'srv.fileNotReadable':
+          'The system refused to read this file \u2014 browsers would only get "403 Forbidden". Try another location',
       'settings.themeMode': 'Theme Mode',
       'settings.themeSystem': 'System',
       'settings.themeLight': 'Light',
@@ -283,6 +311,8 @@ class AppLocalizations {
       'log.copyPath': '已複製路徑',
       'log.openFailed': '開啟失敗',
       'log.fileGone': '檔案不存在或已被移動',
+      'log.isDir': '這是目錄，請在瀏覽器裡開啟分享頁面瀏覽',
+      'log.noApp': '本機沒有能開啟該型別的關聯應用',
       'srv.orphanKilled': '偵測到殘留 dufs 行程，已結束並使用連接埠 {port}',
       'srv.portBumped': '原連接埠 {from} 被其他程式佔用，已切換到 {to}',
       'srv.portsExhausted': '連接埠 {range} 全部被佔用，請手動指定空閒連接埠',
@@ -292,6 +322,13 @@ class AppLocalizations {
       'srv.dufsMissing': 'dufs 服務元件缺失，請重新安裝應用。路徑: {path}',
       'srv.exitedDuringStart': 'dufs 行程啟動後立即退出（代碼 {code}）',
       'srv.exitedUnexpectedly': 'dufs 行程意外退出（代碼 {code}）',
+      'srv.noDir': '請先選擇要分享的目錄',
+      'srv.fileGone': '分享的檔案已不存在，可能被移動或刪除',
+      'srv.parentGone': '檔案所在目錄已不存在',
+      'srv.dirGone': '分享目錄已不存在，可能被移動或刪除',
+      'srv.dirNotReadable': '系統拒絕讀取該目錄，瀏覽器只會收到 403 Forbidden，請換一個目錄試試',
+      'srv.dirNotReadableAndroid': 'Android 10/EMUI 的區隔儲存不允許列出記憶體卡或 Android/data 下的目錄：請改選內部儲存的公共目錄（如 Documents），或在系統設定授予「所有檔案存取權限」',
+      'srv.fileNotReadable': '系統拒絕讀取該檔案，瀏覽器只會收到 403 Forbidden，請換一個位置試試',
       'settings.themeMode': '主題模式',
       'settings.themeSystem': '跟隨系統',
       'settings.themeLight': '淺色',
