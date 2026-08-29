@@ -71,7 +71,7 @@ A Dufs-based, lightweight cross-platform file distribution GUI optimized for **a
 | Platform | File | |
 |:---|:---|:---:|
 | 🪟 **Windows** | `fileinfra-*-windows-x64-setup.exe` (installer) or `.zip` (portable) | ✅ Tested |
-| 🤖 **Android** | `fileinfra-*-android-arm64.apk` | ✅ Tested |
+| 🤖 **Android** | `fileinfra-*-android-universal.apk` (arm64-v8a · armeabi-v7a · x86_64) | ✅ Tested |
 | 🐧 **Linux x64** | `.AppImage` (zero deps) or `.deb` | ✅ Tested |
 | 🐧 **Linux ARM64** | `.AppImage` or `.deb` (Kylin/UOS compatible) | ✅ Tested |
 | 🍎 **macOS** | `FileInfra-*-macos-arm64.zip` | ⚠️ Untested |

@@ -4,7 +4,7 @@
 
 | Platform | Files | Status |
 |----------|-------|--------|
-| Android arm64 | `.apk` | ✅ |
+| Android universal | `.apk` (arm64-v8a · armeabi-v7a · x86_64) | ✅ |
 | Windows x64 | `.zip` (portable) + `.exe` (installer) | ✅ |
 | Linux x64 | `.AppImage` + `.deb` + `.tar.gz` | ✅ |
 | Linux ARM64 | `.AppImage` + `.deb` + `.tar.gz` | ✅ |
