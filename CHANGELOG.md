@@ -3,6 +3,22 @@
 > 所有版本均可在 [GitHub Releases](https://github.com/zocs/fileinfra/releases) 下载。
 > All versions available at [GitHub Releases](https://github.com/zocs/fileinfra/releases).
 
+## [v0.5.3](https://github.com/zocs/fileinfra/releases/tag/v0.5.3) (2026-08-30)
+
+**中文：**
+- 🐛 修复点击传输记录无反应的问题：Android 改用应用自有通道打开文件，不再向系统索取媒体权限；文件已被移动或删除时给出明确提示，而不是悄悄失败。
+- 🐛 修复部分 EMUI 设备上"分享目录不可读导致所有请求 403"的问题：启动时预检目录可读性，不可读则给出本地化原因并拒绝启动。
+- ✨ 传输记录现在保留失败的请求（如 403），方便远程排查。
+- 📦 Android universal 安装包包含 arm64 / armv7 / x86_64 三种架构的文件服务内核（v0.5.2 缺少后两者）。
+- 🌐 内核升级 dufs v0.46.0-fix4：老旧 WebView（Chromium 55–79）打开网页列表空白时，页面提供"基础页面"入口。
+
+**English:**
+- 🐛 Fixed taps on transfer entries doing nothing on Android: files now open through our own FileProvider channel without media-permission prompts; a clear message is shown when the file has been moved or deleted, instead of failing silently.
+- 🐛 Fixed plain 403 for every request on some EMUI devices: startup now pre-checks that the shared directory is readable and aborts with a localized reason instead of failing opaquely.
+- ✨ The transfer log now keeps failed requests (e.g. 403) for easier remote troubleshooting.
+- 📦 The Android universal APK now ships file-server cores for arm64, armv7 and x86_64 (v0.5.2 lacked the latter two).
+- 🌐 Core upgraded to dufs v0.46.0-fix4: old WebViews (Chromium 55–79) that render a blank list now show a "basic page" entry point.
+
 ## [v0.5.2](https://github.com/zocs/fileinfra/releases/tag/v0.5.2) (2026-08-23)
 
 **中文：**

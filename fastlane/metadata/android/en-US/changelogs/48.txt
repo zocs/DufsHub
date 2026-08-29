@@ -1,0 +1,5 @@
+Fixed taps on transfer entries doing nothing: files open through our own channel without media-permission prompts; clear message when the file is gone
+Fixed some EMUI devices failing all requests with 403: startup pre-checks the shared folder and aborts with a localized reason
+Transfer log now keeps failed HTTP requests (e.g. 403)
+Universal APK includes arm64 / armv7 / x86_64 cores (0.5.2 lacked the latter two)
+Core: dufs v0.46.0-fix4 (basic-page fallback for old WebViews)
