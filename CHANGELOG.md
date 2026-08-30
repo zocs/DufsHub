@@ -3,6 +3,14 @@
 > 所有版本均可在 [GitHub Releases](https://github.com/zocs/fileinfra/releases) 下载。
 > All versions available at [GitHub Releases](https://github.com/zocs/fileinfra/releases).
 
+## [Unreleased]
+
+**中文：**
+- ✨ 共享剪贴板：服务运行时可与局域网内所有浏览器实时同步剪贴板（独立端口 = 主服务端口 + 5000，同一端口 HTTP 页面 + WebSocket 双向推送，零第三方依赖）。
+
+**English:**
+- ✨ Shared clipboard: while the server is running, all LAN browsers can sync clipboard content in real time (separate port = main port + 5000; HTTP page + WebSocket push on the same port, zero third-party deps).
+
 ## [v0.5.5](https://github.com/zocs/fileinfra/releases/tag/v0.5.5) (2026-08-30)
 
 **中文：**
