@@ -110,6 +110,17 @@ jobs:
             fi
             echo "OK: $SO aligned to ${{ env.ANDROID_LIBDUFS_ALIGN }} ($(du -h "$SO" | cut -f1))"
           done
+      - name: Check dufs web assets JS syntax (Chromium>=55)
+        # 白屏修复防回归（陷阱 #14）：index.js 编译进 libdufs.so，禁止
+        # Chromium>=80 语法（?. / Object.fromEntries / catch{} / 对象展开）
+        # 回到 Android 核心。
+        run: |
+          SRC=$(ls -d /tmp/dufs-src-* 2>/dev/null | head -1)
+          if [ -z "$SRC" ]; then
+            echo "::error::dufs checkout not found (/tmp/dufs-src-*)"
+            exit 1
+          fi
+          bash scripts/check_dufs_web.sh "$SRC/assets/index.js"
       - name: Decode Keystore
         if: env.KEYSTORE_BASE64 != ''
         env:

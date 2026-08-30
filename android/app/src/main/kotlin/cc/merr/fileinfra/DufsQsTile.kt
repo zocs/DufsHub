@@ -35,7 +35,14 @@ class DufsQsTile : TileService() {
 
     private fun startServerFromTile(ctx: Context, launch: Intent) {
         try {
-            ctx.startForegroundService(launch)
+            // startForegroundService 是 API 26+（minSdk 24）：API 24/25 用
+            // startService，服务内自行 startForeground。
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                ctx.startForegroundService(launch)
+            } else {
+                @Suppress("DEPRECATION")
+                ctx.startService(launch)
+            }
         } catch (e: Exception) {
             // API 31+ 对后台 FGS 启动有限制；磁贴点击的豁免口径各家
             // ROM 实现不一。兜底走透明 trampoline activity（前台上下文）。
@@ -60,10 +67,13 @@ class DufsQsTile : TileService() {
     private fun updateTile() {
         val tile = qsTile ?: return
         tile.state = if (DufsForegroundService.isRunning) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-        if (DufsForegroundService.isRunning && DufsForegroundService.currentPort > 0) {
-            tile.subtitle = "Port ${DufsForegroundService.currentPort}"
-        } else {
-            tile.subtitle = null
+        // tile.subtitle 是 API 29+（minSdk 24）：低版本不设副标题。
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            tile.subtitle = if (DufsForegroundService.isRunning && DufsForegroundService.currentPort > 0) {
+                "Port ${DufsForegroundService.currentPort}"
+            } else {
+                null
+            }
         }
         tile.updateTile()
     }
