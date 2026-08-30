@@ -11,7 +11,8 @@ import 'package:flutter/foundation.dart';
 /// 零第三方依赖，纯 dart:io 实现。
 class ClipboardService {
   /// 剪贴板端口与 dufs 端口之间的固定差值。
-  static const int portOffset = 1000;
+  /// 默认 dufs 5000 → 剪贴板 7000。避开浏览器黑名单端口（如 6000=X11）。
+  static const int portOffset = 2000;
 
   /// 端口被占用时最多尝试 +1 的次数。
   static const int maxBump = 9;

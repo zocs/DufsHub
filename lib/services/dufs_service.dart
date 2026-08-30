@@ -60,7 +60,7 @@ class DufsService extends ChangeNotifier {
   bool get isRunning => _isRunning;
   String? get serverUrl => _serverUrl;
 
-  /// 剪贴板旁路服务展示地址（host 复用主服务地址，端口 = dufs 端口 + 1000）。
+  /// 剪贴板旁路服务展示地址（host 复用主服务地址，端口 = dufs 端口 + 2000）。
   /// 服务未启动或剪贴板服务未绑定成功时返回 null。
   String? get clipboardUrl {
     if (!_isRunning || _serverUrl == null) return null;
@@ -426,8 +426,9 @@ class DufsService extends ChangeNotifier {
       _log('server: $_serverUrl, all: $_allAddresses');
       // Start polling log file for transfer records
       _startLogFilePolling();
-      // 剪贴板旁路服务：端口 = dufs 最终解析端口 + 1000（dufs 自动+1 时跟随），
-      // 与 dufs 同生同死；自身被占再+1 最多 9 步，全被占则降级跳过。
+      // 剪贴板旁路服务：端口 = dufs 最终解析端口 + 2000（默认 5000→7000，
+      // dufs 自动+1 时跟随），与 dufs 同生同死；自身被占或落在浏览器黑名单
+      // 端口再+1 最多 9 步，全不可用则降级跳过。
       await _clipboard.start(actualPort);
       // 通知栏更新：地址 + 剪贴板地址（startForegroundService 时 _serverUrl 尚未
       // 确定，传的是空串，导致之前通知栏不显示地址——此处推送纠正）。

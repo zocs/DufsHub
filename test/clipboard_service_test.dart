@@ -8,10 +8,10 @@ import 'package:flutter_test/flutter_test.dart';
 /// ClipboardService 单测：HTTP 页面 + WebSocket 双向同步 + 端口跟随 + 占用降级。
 void main() {
   test('同一端口同时服务 HTTP 页面与 WebSocket 双向同步', () async {
-    // 启动一个 dummy 服务作为"dufs"，剪贴板应绑到 dufsPort + 1000
+    // 启动一个 dummy 服务作为"dufs"，剪贴板应绑到 dufsPort + portOffset
     final dummy = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final dufsPort = dummy.port;
-    final cbPort = dufsPort + 1000;
+    final cbPort = dufsPort + ClipboardService.portOffset;
 
     final svc = ClipboardService();
     await svc.start(dufsPort);
@@ -74,18 +74,31 @@ void main() {
     final dummy = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final dufsPort = dummy.port;
 
-    // 占用 dufsPort + 1000（剪贴板首选端口）
-    final blocker = await HttpServer.bind(InternetAddress.loopbackIPv4, dufsPort + 1000);
+    // 占用 dufsPort + portOffset（剪贴板首选端口）
+    final blocker = await HttpServer.bind(InternetAddress.loopbackIPv4, dufsPort + ClipboardService.portOffset);
 
     final svc = ClipboardService();
     await svc.start(dufsPort);
     // 首选端口被占，应退到 +1
     expect(svc.isRunning, isTrue);
-    expect(svc.port, dufsPort + 1001);
+    expect(svc.port, dufsPort + ClipboardService.portOffset + 1);
 
     await svc.stop();
     await blocker.close(force: true);
     await dummy.close(force: true);
+  });
+
+  test('浏览器不安全端口（6000=X11）自动跳过', () async {
+    final dummy = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final dufsPort = 4000; // 剪贴板首选 = 6000（X11，浏览器禁用）
+    await dummy.close(force: true);
+
+    final svc = ClipboardService();
+    await svc.start(dufsPort);
+    expect(svc.isRunning, isTrue);
+    expect(svc.port, 6001); // 跳过 6000 → 6001
+
+    await svc.stop();
   });
 
   test('端口范围全部被占时降级跳过', () async {
@@ -95,7 +108,7 @@ void main() {
     // 占满 dufsPort+1000 ~ dufsPort+1009（= 全部 10 个候选端口）
     final blockers = <HttpServer>[];
     for (var i = 0; i <= ClipboardService.maxBump; i++) {
-      final s = await HttpServer.bind(InternetAddress.loopbackIPv4, dufsPort + 1000 + i);
+      final s = await HttpServer.bind(InternetAddress.loopbackIPv4, dufsPort + ClipboardService.portOffset + i);
       blockers.add(s);
     }
 
