@@ -3,6 +3,20 @@
 > 所有版本均可在 [GitHub Releases](https://github.com/zocs/fileinfra/releases) 下载。
 > All versions available at [GitHub Releases](https://github.com/zocs/fileinfra/releases).
 
+## [Unreleased]
+
+**中文：**
+- ✨ 多网络地址：每个地址可设为默认，主显示地址与二维码跟随切换；每个地址带独立二维码弹窗。
+- 🎨 自定义主题色：设置页色盘选任意颜色（自绘 HSV，无第三方依赖）。
+- 🔧 快捷设置磁贴 API 兼容守卫（`tile.subtitle` API 29+ / `startForegroundService` API 26+，minSdk 24）。
+- 🔧 dufs 网页 assets 语法门禁（ES2017 / Chromium 55+），防白屏修复回归。
+
+**English:**
+- ✨ Multiple network addresses: each can be set as default, the primary address and QR follow; each address has its own QR popup.
+- 🎨 Custom theme color: pick any color from a color wheel in Settings (hand-rolled HSV, no third-party dependency).
+- 🔧 Quick-settings tile API guards (`tile.subtitle` API 29+ / `startForegroundService` API 26+, minSdk 24).
+- 🔧 dufs web asset syntax gate (ES2017 / Chromium 55+), preventing blank-page fix regressions.
+
 ## [v0.5.3](https://github.com/zocs/fileinfra/releases/tag/v0.5.3) (2026-08-30)
 
 **中文：**

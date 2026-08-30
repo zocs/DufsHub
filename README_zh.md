@@ -45,7 +45,7 @@
 | 🔗 **打开就用** | 扫码或输入地址，对端零门槛 |
 | 🔐 **安全可控** | 可选密码认证、CORS 控制 |
 | 🔀 **权限细粒度** | 上传、删除、搜索、归档下载，逐项开关 |
-| 🎨 **自由配色** | 6 种配色 + 深色/浅色模式 |
+| 🎨 **自由配色** | 6 种预设 + 自定义色盘（任意颜色）+ 深色/浅色模式 |
 | 🌐 **三语支持** | 简体中文 · 繁體中文 · English |
 | 📦 **零依赖** | 自包含，装完就能用 |
 
@@ -238,10 +238,12 @@ lib/
 │   ├── server_config.dart          # 配置模型 + 持久化
 │   └── transfer_log.dart           # 传输日志解析
 ├── pages/
-│   ├── home_page.dart              # 主页：目录/权限/启停/二维码
-│   ├── settings_page.dart          # 设置：主题/配色/语言
+│   ├── home_page.dart              # 主页：目录/权限/启停/二维码（多地址默认 + 每地址二维码）
+│   ├── settings_page.dart          # 设置：主题/配色（含自定义色盘）/语言
 │   ├── setup_wizard_page.dart      # 首次启动向导
 │   └── log_page.dart               # 传输日志查看
+├── widgets/
+│   └── color_picker_dialog.dart    # 自绘 HSV 色盘（无依赖）
 └── services/
     ├── dufs_service.dart           # dufs 生命周期（平台分发）
     └── dufs_ffi.dart               # FFI 绑定（桌面端）

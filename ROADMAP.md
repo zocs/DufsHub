@@ -1,63 +1,53 @@
 # FileInfra Roadmap
 
-## Current Status (2026-04-27)
+## Current Status (2026-08-30)
 
-### Recently completed
-- [x] dufs FFI desktop embedding
-- [x] Android foreground service lifecycle
-- [x] Hidden system files + `index.html` rendering
-- [x] Android API < 30 dufs startup crash fix
-- [x] Explicit single-file picker entry
-- [x] Incremental transfer log reading
+### v0.5.x Released
+- [x] **v0.5.1** (2026-08-22): full code review batch, Android quick-settings tile, notification enhancements
+- [x] **v0.5.2** (2026-08-23): dufs core v0.46.0-fix3, large-folder zip truncation fix
+- [x] **v0.5.3** (2026-08-30): dufs core v0.46.0-fix4 (old WebView support), Android open-file rewrite, startup pre-check for unreadable dirs, 403 log retention, universal/per-ABI 4 APK split, release notes dual-track
 
-### Next up
-- [ ] Flutter/CI cache to reduce release build time
-- [ ] Generate `checksums.txt` for release assets
+### Completed since last roadmap update
+- [x] CI cache & checksums.txt generation
+- [x] Per-ABI APK builds (--split-per-abi)
+- [x] dufs web asset syntax gate (ES2017, Chromium 55+, preventing blank-page regression)
+- [x] QS tile API compatibility guards (API 29/26 vs minSdk 24)
+- [x] Multi-address default toggle + per-address QR popup
+- [x] Custom theme color picker (HSV, no deps)
+- [x] Dark mode auto-follow system
+- [x] F-Droid preparation (recipe, pre-check, fastlane metadata, zh-CN)
+
+### Up next (next release)
 - [ ] Unify orphan cleanup paths (`_killOrphanDufs` / `killOrphanOnPort`)
-- [ ] Clean tray temporary icon files
-- [ ] Tighten `_trackActivity` request matching
-- [ ] Stop Android foreground service reliably on all app exit paths
+- [ ] F-Droid submission (deferred)
+- [ ] Old tablet blank-page real-device retest
 
----
+### Medium-term
+- [ ] HTTPS support (self-signed or Let's Encrypt)
+- [ ] Upload progress bar (large file UX)
+- [ ] Batch operations (multi-download as zip, multi-delete)
+- [ ] Share link expiry (auto-invalidate)
+- [ ] Access log (who accessed what)
+- [ ] Per-directory auth (password per folder)
+- [ ] File preview (image/text/video)
 
-## v0.4.0 — 功能扩展（未来）
+### Long-term / Low-priority
+- [ ] WebDAV support
+- [ ] Language expansion (Japanese, Korean, etc.)
+- [ ] Share statistics panel (total traffic, connections)
+- [ ] Android desktop widget (quick start/stop)
+- [ ] Android shortcuts (share specific dir directly)
+- [ ] Windows right-click menu ("Share with FileInfra")
+- [ ] macOS DMG package
+- [ ] Android AAB (Play Store)
+- [ ] iPad adaptation
 
-### 高优先级
-- [ ] HTTPS 支持（自签证书或 Let's Encrypt）
-- [ ] 上传进度条（大文件上传体验）
-- [ ] 文件预览（图片/文本/视频）
-- [ ] 批量操作（批量下载为 zip、批量删除）
+## Known Issues
 
-### 中优先级
-- [ ] 分享链接有效期（自动过期）
-- [ ] 访问日志（谁访问了什么文件）
-- [ ] 文件夹密码（per-directory auth）
-- [ ] 暗色模式自动跟随系统（Android 10+）
-
-### 低优先级
-- [ ] WebDAV 支持
-- [ ] 多语言扩展（日语、韩语）
-- [ ] 自定义主题（用户自选颜色）
-- [ ] 分享统计面板（总流量、连接数）
-
----
-
-## v0.5.0 — 平台增强（远期）
-
-- [ ] Android 桌面小部件（快速启动/停止）
-- [ ] Android 快捷方式（直接分享指定目录）
-- [ ] Windows 右键菜单集成（"用 FileInfra 分享此文件夹"）
-- [ ] macOS DMG 安装包
-- [ ] Android AAB 格式（Play Store 准备）
-- [ ] iPad 适配
-
----
-
-## 已知问题
-
-| 问题 | 严重性 | 状态 |
-|------|--------|------|
-| AppImage dufs 外部无法访问 | 中 | 已通过 FFI + `/tmp` 提取缓解，仍需更多发行版验证 |
-| macOS 未签名，需手动 xattr | 低 | 无法自动签名 |
-| `withValues(alpha:)` 需 Flutter 3.27+ | 低 | 当前版本无问题 |
-| `_killOrphanDufs` 与 `killOrphanOnPort` 代码重复 | 低 | 功能正常 |
+| Issue | Severity | Status |
+|-------|----------|--------|
+| AppImage dufs external access | Medium | Resolved via FFI + `/tmp` extraction; needs more distro testing |
+| macOS unsigned, needs manual xattr | Low | Cannot auto-sign |
+| `withValues(alpha:)` requires Flutter 3.27+ | Low | Current version OK |
+| NSIS `OutFile` order fragile | Low | Commented, don't touch without CI smoke |
+| Linux tray left-click no signal | Low | Design decision, documented in handoff #10 |

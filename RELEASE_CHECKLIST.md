@@ -7,7 +7,7 @@
 版本号: `X.Y.Z` (build: `+Z`)
 
 - [ ] `pubspec.yaml` → `version: X.Y.Z+Z`
-- [ ] `lib/app.dart` → `appVersion = 'X.Y.Z'`
+- [ ] `lib/app.dart`/`lib/main.dart` → `appVersion` 自动从 `PackageInfo.fromPlatform()` 读取，**无需手改**（main.dart 启动时赋值）`
 - [ ] `installer/fileinfra.nsi` → `!define APP_VERSION "X.Y.Z"`
 - [ ] `.fdroid.yml` → `versionName: X.Y.Z`, `versionCode: Z`
 - [ ] `.fdroid.yml` → `CurrentVersion: X.Y.Z`, `CurrentVersionCode: Z`

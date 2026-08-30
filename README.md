@@ -45,7 +45,7 @@ A Dufs-based, lightweight cross-platform file distribution GUI optimized for **a
 | 🔗 **Just open a link** | QR code or URL — that's all the other side needs |
 | 🔐 **Secure** | Optional password auth, CORS control |
 | 🔀 **Fine-grained permissions** | Upload, delete, search, archive download — toggle each one |
-| 🎨 **Customizable** | 6 color schemes + dark / light mode |
+| 🎨 **Customizable** | 6 color schemes + custom color wheel + dark / light mode |
 | 🌐 **Multilingual** | 简体中文 · 繁體中文 · English |
 | 📦 **Zero setup** | Self-contained — no external dependencies |
 
@@ -261,10 +261,12 @@ lib/
 │   ├── server_config.dart          # Config model + persistence
 │   └── transfer_log.dart           # Transfer log parser
 ├── pages/
-│   ├── home_page.dart              # Home: dir / perms / start / QR
-│   ├── settings_page.dart          # Settings: theme / color / language
+│   ├── home_page.dart              # Home: dir / perms / start / QR (multi-address default + per-address QR)
+│   ├── settings_page.dart          # Settings: theme / color (incl. custom picker) / language
 │   ├── setup_wizard_page.dart      # First-run wizard
 │   └── log_page.dart               # Transfer log viewer
+├── widgets/
+│   └── color_picker_dialog.dart    # Hand-rolled HSV color wheel (no deps)
 └── services/
     ├── dufs_service.dart           # dufs lifecycle (platform dispatch)
     └── dufs_ffi.dart               # FFI bindings (desktop)
