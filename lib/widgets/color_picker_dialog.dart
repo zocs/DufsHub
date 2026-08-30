@@ -115,15 +115,20 @@ class _SvPanel extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               child: Stack(
                 children: [
-                  // 底：横向 白 → 纯色相；纵向 透明 → 黑
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.white, hueColor],
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
+                  // 层 1：横向 白 → 纯色相
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.white, hueColor],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
                       ),
                     ),
+                  ),
+                  // 层 2：纵向 透明 → 黑
+                  Positioned.fill(
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
