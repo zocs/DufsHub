@@ -8,10 +8,12 @@
 **中文：**
 - ✨ 共享剪贴板：服务运行时可与局域网内所有浏览器实时同步剪贴板（独立端口 = dufs 端口 + 2000，默认 7000；同一端口 HTTP 页面 + WebSocket 双向推送，零第三方依赖）。
 - 🔧 剪贴板端口避开浏览器不安全端口（6000=X11 等，浏览器直接拒绝访问）。
+- 🌐 无 JS 分享页（`?noscript`，供旧 WebView / 文本浏览器）支持上传文件、新建文件夹、删除条目（dufs 核心 v0.46.0-fix5）。
 
 **English:**
 - ✨ Shared clipboard: while the server is running, all LAN browsers can sync clipboard content in real time (separate port = dufs port + 2000, default 7000; HTTP page + WebSocket push on the same port, zero third-party deps).
 - 🔧 Clipboard port avoids browser-unsafe ports (6000=X11 etc., browsers refuse to open them).
+- 🌐 The no-JS fallback page (`?noscript`, for old WebViews / text browsers) can now upload files, create folders, and delete items (dufs core v0.46.0-fix5).
 
 ## [v0.5.5](https://github.com/zocs/fileinfra/releases/tag/v0.5.5) (2026-08-30)
 
