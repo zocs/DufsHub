@@ -3,6 +3,16 @@
 > 所有版本均可在 [GitHub Releases](https://github.com/zocs/fileinfra/releases) 下载。
 > All versions available at [GitHub Releases](https://github.com/zocs/fileinfra/releases).
 
+## [v0.5.5](https://github.com/zocs/fileinfra/releases/tag/v0.5.5) (2026-08-30)
+
+**中文：**
+- ✨ 通知栏显示完整访问地址（如 `http://192.168.1.5:5000`）；切换默认地址时通知栏同步更新；磁贴重启后仍能恢复地址显示。
+- 🐛 修复自定义主题色色盘空白、指示点无法拖动的问题（`_SvPanel` 两个渐变由父子嵌套改为 `Positioned.fill` 平级兄弟，内层 `DecoratedBox` 无 child 时尺寸折叠为 0 导致色盘不渲染）。
+
+**English:**
+- ✨ Notification now shows the full access address (e.g. `http://192.168.1.5:5000`); it follows the default address switch and survives tile restarts.
+- 🐛 Fixed blank SV color panel and unmovable marker in the custom theme color picker (gradients were parent-child nested; inner DecoratedBox collapsed to zero size — now siblings filling the Stack).
+
 ## [v0.5.4](https://github.com/zocs/fileinfra/releases/tag/v0.5.4) (2026-08-30)
 
 **中文：**

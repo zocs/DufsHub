@@ -35,6 +35,9 @@ class DufsForegroundService : Service() {
         var currentPath = ""
             private set
         @Volatile
+        var currentAddress = ""
+            private set
+        @Volatile
         var lastError: String? = null
             private set
 
@@ -64,6 +67,7 @@ class DufsForegroundService : Service() {
                     .putExtra("path", path)
                     .putExtra("args", args.toTypedArray())
                     .putExtra("lang", prefs.getString("lang", "en") ?: "en")
+                    .putExtra("address", prefs.getString("address", "") ?: "")
             } catch (_: Exception) {
                 null
             }
@@ -85,6 +89,82 @@ class DufsForegroundService : Service() {
                 }
             }
         }
+
+        /// 用户切换默认地址后由 Dart 侧经 MethodChannel 调用：只更新
+        /// 通知栏地址（含持久化，磁贴重启后仍能恢复），不重启服务。
+        fun updateAddress(context: Context, address: String) {
+            if (!isRunning) return
+            currentAddress = address
+            try {
+                context.getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+                    .putString("address", address)
+                    .apply()
+            } catch (_: Exception) {}
+            val lang = context.getSharedPreferences(PREFS, MODE_PRIVATE)
+                .getString("lang", "en") ?: "en"
+            val manager = context.getSystemService(NotificationManager::class.java)
+            manager.notify(
+                NOTIFICATION_ID,
+                buildNotification(context, currentPort, address, currentPath, lang)
+            )
+        }
+
+        /// 通知内容构建（companion 静态方法：updateAddress 与 onStartCommand
+        /// 都要用，且后者可能在服务实例创建前调用）。
+        fun buildNotification(context: Context, port: Int, address: String, path: String, lang: String): Notification {
+            val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            val pendingIntent = PendingIntent.getActivity(
+                context, 0, intent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            val stopIntent = Intent(context, DufsForegroundService::class.java).setAction(ACTION_STOP)
+            val stopPendingIntent = PendingIntent.getService(
+                context, 1, stopIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Notification.Builder(context, CHANNEL_ID)
+            } else {
+                @Suppress("DEPRECATION")
+                Notification.Builder(context)
+            }
+
+            // The in-app language is a user setting independent of device locale, so
+            // localize the user-visible notification here (passed in via the start
+            // intent) rather than via Android string resources, which key off the
+            // device locale.
+            val display = if (address.isBlank()) {
+                when (lang) {
+                    "zh" -> "端口 $port"
+                    "zhTW" -> "連接埠 $port"
+                    else -> "port $port"
+                }
+            } else address
+            val (title, text, stopLabel) = when (lang) {
+                "zh" -> Triple("FileInfra 文件分享", "服务运行中（$display）", "停止分享")
+                "zhTW" -> Triple("FileInfra 檔案分享", "服務運行中（$display）", "停止分享")
+                else -> Triple("FileInfra File Sharing", "Running ($display)", "Stop")
+            }
+
+            return builder
+                .setContentTitle(title)
+                .setContentText(text)
+                // Alpha-only drawable: adaptive launcher mipmaps render as a washed
+                // gray square in the status bar.
+                .setSmallIcon(R.drawable.ic_stat_notify)
+                .setContentIntent(pendingIntent)
+                .addAction(
+                    Notification.Action.Builder(
+                        null,
+                        stopLabel,
+                        stopPendingIntent
+                    ).build()
+                )
+                .setOngoing(true)
+                .build()
+        }
     }
 
     override fun onCreate() {
@@ -105,6 +185,7 @@ class DufsForegroundService : Service() {
         val path = intent?.getStringExtra("path") ?: ""
         val args = intent?.getStringArrayExtra("args") ?: emptyArray()
         val lang = intent?.getStringExtra("lang") ?: "en"
+        val address = intent?.getStringExtra("address") ?: ""
 
         // Clear the previous run's failure at entry (before the lock): Dart's
         // start-flow poll reads this field within ~200ms of dispatch, and a
@@ -132,9 +213,9 @@ class DufsForegroundService : Service() {
             startGeneration++
             gen = startGeneration
             killDufs()
-            persistLaunch(port, path, args, lang)
+            persistLaunch(port, path, args, lang, address)
 
-            val notification = buildNotification(port, path, lang)
+            val notification = buildNotification(this, port, address, path, lang)
             // Android 14+ (API 34) requires the 3-arg startForeground with an
             // explicit service type. We use SPECIAL_USE (declared in the
             // manifest with PROPERTY_SPECIAL_USE_FGS_SUBTYPE): dataSync would
@@ -164,8 +245,9 @@ class DufsForegroundService : Service() {
                 } else if (proc != null) {
                     currentPort = port
                     currentPath = path
+                    currentAddress = address
                     isRunning = true
-                    Log.d(TAG, "Service started: port=$port path=$path")
+                    Log.d(TAG, "Service started: port=$port path=$path address=$address")
                 } else {
                     Log.e(TAG, "Failed to start dufs, stopping service (gen=$gen)")
                     stopForeground(STOP_FOREGROUND_REMOVE)
@@ -241,7 +323,7 @@ class DufsForegroundService : Service() {
         DufsQsTile.requestUpdate(this)
     }
 
-    private fun persistLaunch(port: Int, path: String, args: Array<String>, lang: String) {
+    private fun persistLaunch(port: Int, path: String, args: Array<String>, lang: String, address: String) {
         try {
             val arr = org.json.JSONArray()
             args.forEach { arr.put(it) }
@@ -250,6 +332,7 @@ class DufsForegroundService : Service() {
                 .putString("path", path)
                 .putString("args", arr.toString())
                 .putString("lang", lang)
+                .putString("address", address)
                 .apply()
         } catch (e: Exception) {
             Log.w(TAG, "persistLaunch failed: ${e.message}")
@@ -397,6 +480,7 @@ class DufsForegroundService : Service() {
         isRunning = false
         currentPort = 0
         currentPath = ""
+        currentAddress = ""
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -428,53 +512,5 @@ class DufsForegroundService : Service() {
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
         }
-    }
-
-    private fun buildNotification(port: Int, path: String, lang: String): Notification {
-        val intent = packageManager.getLaunchIntentForPackage(packageName)
-        val pendingIntent = PendingIntent.getActivity(
-            this, 0, intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        val stopIntent = Intent(this, DufsForegroundService::class.java).setAction(ACTION_STOP)
-        val stopPendingIntent = PendingIntent.getService(
-            this, 1, stopIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Notification.Builder(this, CHANNEL_ID)
-        } else {
-            @Suppress("DEPRECATION")
-            Notification.Builder(this)
-        }
-
-        // The in-app language is a user setting independent of device locale, so
-        // localize the user-visible notification here (passed in via the start
-        // intent) rather than via Android string resources, which key off the
-        // device locale.
-        val (title, text, stopLabel) = when (lang) {
-            "zh" -> Triple("FileInfra 文件分享", "服务运行中（端口 $port）", "停止分享")
-            "zhTW" -> Triple("FileInfra 檔案分享", "服務運行中（連接埠 $port）", "停止分享")
-            else -> Triple("FileInfra File Sharing", "Running (port $port)", "Stop")
-        }
-
-        return builder
-            .setContentTitle(title)
-            .setContentText(text)
-            // Alpha-only drawable: adaptive launcher mipmaps render as a washed
-            // gray square in the status bar.
-            .setSmallIcon(R.drawable.ic_stat_notify)
-            .setContentIntent(pendingIntent)
-            .addAction(
-                Notification.Action.Builder(
-                    null,
-                    stopLabel,
-                    stopPendingIntent
-                ).build()
-            )
-            .setOngoing(true)
-            .build()
     }
 }

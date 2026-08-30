@@ -108,6 +108,7 @@ class MainActivity : FlutterActivity() {
                     val path = call.argument<String>("path") ?: ""
                     val args = call.argument<List<String>>("args")?.toTypedArray() ?: emptyArray()
                     val lang = call.argument<String>("lang") ?: "en"
+                    val address = call.argument<String>("address") ?: ""
                     if (port !in 1..65535 || path.isEmpty()) {
                         result.error("invalid_args", "port=$port path-empty=${path.isEmpty()}", null)
                         return
@@ -117,12 +118,18 @@ class MainActivity : FlutterActivity() {
                     intent.putExtra("path", path)
                     intent.putExtra("args", args)
                     intent.putExtra("lang", lang)
+                    intent.putExtra("address", address)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         startForegroundService(intent)
                     } else {
                         startService(intent)
                     }
                     Log.d("fileinfra", "Foreground service start requested: port=$port")
+                    result.success(true)
+                }
+                "updateNotificationAddress" -> {
+                    val address = call.argument<String>("address") ?: ""
+                    DufsForegroundService.updateAddress(this, address)
                     result.success(true)
                 }
                 "stopForegroundService" -> {

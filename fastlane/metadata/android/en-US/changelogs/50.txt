@@ -1,0 +1,3 @@
+[en]
+The notification now shows the full access address (address and port) and follows the default-address switch
+Fixed the custom theme color picker: the color wheel now shows correctly and the selector can be moved

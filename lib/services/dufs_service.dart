@@ -117,6 +117,11 @@ class DufsService extends ChangeNotifier {
     _preferredAddress = ip;
     _serverUrl = 'http://${_formatHost(ip)}:$_activePort';
     notifyListeners();
+    // 服务运行中则同步通知栏地址（Kotlin 侧 no-op if 未运行）。
+    if (Platform.isAndroid && _isRunning) {
+      _ch.invokeMethod('updateNotificationAddress', {'address': _serverUrl})
+          .catchError((_) {});
+    }
   }
 
   /// 获取所有可用网络接口的 IPv4 地址及网卡名称
@@ -334,6 +339,7 @@ class DufsService extends ChangeNotifier {
           'path': config.path,
           'args': args,
           'lang': config.language,
+          'address': _serverUrl ?? '',
         });
         // Poll service status. Kotlin side runs a TCP-connect probe that can
         // take up to ~5s on slow devices; a fixed 500ms wait races with that
