@@ -3,7 +3,7 @@
 > 所有版本均可在 [GitHub Releases](https://github.com/zocs/fileinfra/releases) 下载。
 > All versions available at [GitHub Releases](https://github.com/zocs/fileinfra/releases).
 
-## [Unreleased]
+## [v0.5.4](https://github.com/zocs/fileinfra/releases/tag/v0.5.4) (2026-08-30)
 
 **中文：**
 - ✨ 多网络地址：每个地址可设为默认，主显示地址与二维码跟随切换；每个地址带独立二维码弹窗。

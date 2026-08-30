@@ -1,0 +1,4 @@
+[en]
+Added per-address QR codes and a default-address switch when multiple network addresses are available
+Added a custom theme color picker: choose any color you like
+Improved the notification quick-tile on older systems

@@ -40,11 +40,11 @@ Repo: https://github.com/zocs/fileinfra
 Builds:
   # 0.5.3 起才有可复现的 Android 构建；更早版本的历史被 rewrite 过（见
   # docs/handoff.md 的 rename 一节），不回填。
-  - versionName: 0.5.3
-    versionCode: 48
+  - versionName: 0.5.4
+    versionCode: 49
     # 必须是 Repo 默认分支上可达的 commit。上一版这里写的是 3be86d42…，
     # 那是 rewrite 之前的悬空对象，`git checkout` 直接失败。
-    commit: ce6c64fd9ea1b7b9915d2dd938ecc28f6ed9cfa2
+    commit: ce6c64fd9ea1b7b9915d2dd938ecc28f6ed9cfa2  # 发布后回填为 v0.5.4 release commit 的完整哈希
     sudo:
       - apt-get update
       # cmake：dufs 默认开 `tls` feature → rustls 0.23 的 aws-lc-sys 会被编译，
@@ -85,7 +85,7 @@ Builds:
       - .pub-cache
     build:
       - export PUB_CACHE="$(pwd)/.pub-cache"
-      - $$flutter$$/bin/flutter build apk --release --build-name=0.5.3 --build-number=48
+      - $$flutter$$/bin/flutter build apk --release --build-name=0.5.4 --build-number=49
     # 与 CI 的 EXPECTED_NDK_MAJOR 一致。注意：真正保证老设备能加载的是
     # scripts/build_dufs.sh 里强制的 -Wl,-z,max-page-size=0x1000 +
     # --pack-dyn-relocs=none，CI 的 page-alignment guard 会校验；NDK 版本本身
@@ -96,5 +96,5 @@ AllowedAPKSigningKeys: e4db9054ff7070e4bee3387e928e1388facfec0526da10e4510282e9d
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 0.5.3
-CurrentVersionCode: 48
+CurrentVersion: 0.5.4
+CurrentVersionCode: 49
