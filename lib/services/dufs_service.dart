@@ -60,7 +60,7 @@ class DufsService extends ChangeNotifier {
   bool get isRunning => _isRunning;
   String? get serverUrl => _serverUrl;
 
-  /// 剪贴板旁路服务展示地址（host 复用主服务地址，端口 +5000）。
+  /// 剪贴板旁路服务展示地址（host 复用主服务地址，端口 = dufs 端口 + 1000）。
   /// 服务未启动或剪贴板服务未绑定成功时返回 null。
   String? get clipboardUrl {
     if (!_isRunning || _serverUrl == null) return null;
@@ -418,7 +418,8 @@ class DufsService extends ChangeNotifier {
       _log('server: $_serverUrl, all: $_allAddresses');
       // Start polling log file for transfer records
       _startLogFilePolling();
-      // 剪贴板旁路服务：独立端口 = dufs 基础端口 + 5000，与 dufs 同生同死
+      // 剪贴板旁路服务：端口 = dufs 最终解析端口 + 1000（dufs 自动+1 时跟随），
+      // 与 dufs 同生同死；自身被占再+1 最多 9 步，全被占则降级跳过。
       await _clipboard.start(actualPort);
       notifyListeners();
     } catch (e) {

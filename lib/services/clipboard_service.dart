@@ -6,9 +6,16 @@ import 'package:flutter/foundation.dart';
 
 /// 剪贴板旁路服务：同一端口同时提供 HTTP 页面 + WebSocket 实时同步。
 ///
-/// 端口 = dufs_base_port + 5000，不受 dufs 自动+1 范围影响（最大 9 步）。
+/// 默认端口 = dufs 端口 + 1000（差值固定），dufs 因自动+1 变化时剪贴板也
+/// 跟随+1；若自身端口被占用，独立再+1 最多 [maxBump] 步。
 /// 零第三方依赖，纯 dart:io 实现。
 class ClipboardService {
+  /// 剪贴板端口与 dufs 端口之间的固定差值。
+  static const int portOffset = 1000;
+
+  /// 端口被占用时最多尝试 +1 的次数。
+  static const int maxBump = 9;
+
   HttpServer? _server;
   final Set<WebSocket> _clients = {};
   String? _text;
@@ -17,27 +24,37 @@ class ClipboardService {
 
   bool get isRunning => _running;
 
-  /// 实际绑定的剪贴板端口（= basePort + 5000）。
+  /// 实际绑定的剪贴板端口。
   int? get port => _server?.port;
 
   /// 展示用 URL（host 由 UI 从主服务地址复用）。
   String? get url => _server != null ? 'http://<host>:${_server!.port}' : null;
 
-  /// 启动服务，绑定到 [basePort] + 5000。
+  /// 启动服务，剪贴板端口 = [dufsPort] + 1000。
+  /// 若端口被占用，自动+1 最多 [maxBump] 步；全部被占则 log warning 跳过。
   /// 失败时只 log warning，不抛异常（剪贴板是增量功能，不阻塞主服务）。
-  Future<void> start(int basePort) async {
-    final port = basePort + 5000;
-    try {
-      _server = await HttpServer.bind(InternetAddress.anyIPv4, port);
-      _running = true;
-      debugPrint('ClipboardService: bound on port $port');
-      _server!.listen(_handleRequest, onError: (e) {
-        debugPrint('ClipboardService: server error: $e');
-      });
-    } catch (e) {
-      debugPrint('ClipboardService: failed to bind port $port: $e');
+  Future<void> start(int dufsPort) async {
+    int base = dufsPort + portOffset;
+    if (base > 65535) base = 65535;
+    final maxPort = _min(base + maxBump, 65535);
+
+    for (var port = base; port <= maxPort; port++) {
+      try {
+        _server = await HttpServer.bind(InternetAddress.anyIPv4, port);
+        _running = true;
+        debugPrint('ClipboardService: bound on port $port (dufs $dufsPort)');
+        _server!.listen(_handleRequest, onError: (e) {
+          debugPrint('ClipboardService: server error: $e');
+        });
+        return;
+      } on SocketException catch (_) {
+        // port busy, try next
+      }
     }
+    debugPrint('ClipboardService: all ports $base..$maxPort busy, skipping');
   }
+
+  static int _min(int a, int b) => a < b ? a : b;
 
   /// 停止服务，关闭所有连接。
   Future<void> stop() async {
