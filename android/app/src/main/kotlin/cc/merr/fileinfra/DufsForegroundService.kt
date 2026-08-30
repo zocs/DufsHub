@@ -154,8 +154,8 @@ class DufsForegroundService : Service() {
             } else address
 
             val (fileLabel, clipLabel, stopLabel) = when (lang) {
-                "zh" -> Triple("文件分享", "剪 切 板", "停止分享")
-                "zhTW" -> Triple("檔案分享", "剪 貼 板", "停止分享")
+                "zh" -> Triple("文件分享", "剪切板", "停止分享")
+                "zhTW" -> Triple("檔案分享", "剪貼板", "停止分享")
                 else -> Triple("File Sharing", "Clipboard", "Stop")
             }
 

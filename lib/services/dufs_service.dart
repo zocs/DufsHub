@@ -70,6 +70,9 @@ class DufsService extends ChangeNotifier {
     final h = host.contains(':') ? '[$host]' : host;
     return 'http://$h:$cbPort';
   }
+
+  /// 剪贴板服务启动失败原因（成功启动时为 null）。
+  String? get clipboardError => _clipboard.lastError;
   String? get localIp => _localIp;
   String? get error => _error;
   String? get portInfo => _portInfo;

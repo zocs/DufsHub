@@ -27,18 +27,27 @@ class ClipboardService {
   /// 实际绑定的剪贴板端口。
   int? get port => _server?.port;
 
+  /// 启动失败原因（成功启动时为 null）。
+  String? lastError;
+
   /// 展示用 URL（host 由 UI 从主服务地址复用）。
   String? get url => _server != null ? 'http://<host>:${_server!.port}' : null;
 
   /// 启动服务，剪贴板端口 = [dufsPort] + 1000。
-  /// 若端口被占用，自动+1 最多 [maxBump] 步；全部被占则 log warning 跳过。
+  /// 若端口被占用或落在浏览器不安全端口黑名单（如 6000 = X11），自动+1
+  /// 最多 [maxBump] 步；全部不可用则 log warning 跳过。
   /// 失败时只 log warning，不抛异常（剪贴板是增量功能，不阻塞主服务）。
   Future<void> start(int dufsPort) async {
+    lastError = null;
     int base = dufsPort + portOffset;
     if (base > 65535) base = 65535;
     final maxPort = _min(base + maxBump, 65535);
 
     for (var port = base; port <= maxPort; port++) {
+      // 浏览器（Chrome/Firefox/Safari）不安全端口黑名单：这些端口用于
+      // 系统服务（6000=X11 等），浏览器直接拒绝访问（ERR_UNSAFE_PORT），
+      // 视为不可用跳过。
+      if (_unsafeBrowserPorts.contains(port)) continue;
       try {
         _server = await HttpServer.bind(InternetAddress.anyIPv4, port);
         _running = true;
@@ -47,12 +56,27 @@ class ClipboardService {
           debugPrint('ClipboardService: server error: $e');
         });
         return;
-      } on SocketException catch (_) {
+      } on SocketException catch (e) {
+        lastError = 'Port $port busy: $e';
         // port busy, try next
+      } catch (e) {
+        lastError = 'Bind failed: $e';
+        debugPrint('ClipboardService: bind error: $e');
+        rethrow; // 非 SocketException 的上抛，由调用方处理
       }
     }
     debugPrint('ClipboardService: all ports $base..$maxPort busy, skipping');
   }
+
+  /// 浏览器不安全端口黑名单（Chrome/Firefox 共同禁用，含 X11 6000 等）。
+  static const Set<int> _unsafeBrowserPorts = {
+    1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 42, 43, 53, 69,
+    77, 79, 87, 95, 101, 102, 103, 104, 109, 110, 111, 113, 115, 117,
+    119, 123, 135, 137, 139, 143, 161, 179, 389, 427, 465, 512, 513, 514,
+    515, 526, 530, 531, 532, 540, 548, 554, 556, 563, 587, 601, 636, 989,
+    990, 993, 995, 1719, 1720, 1723, 2049, 3659, 4045, 5060, 5061, 6000,
+    6566, 6665, 6666, 6667, 6668, 6669, 6697, 10080,
+  };
 
   static int _min(int a, int b) => a < b ? a : b;
 
