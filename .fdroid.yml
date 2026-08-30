@@ -44,7 +44,7 @@ Builds:
     versionCode: 49
     # 必须是 Repo 默认分支上可达的 commit。上一版这里写的是 3be86d42…，
     # 那是 rewrite 之前的悬空对象，`git checkout` 直接失败。
-    commit: ce6c64fd9ea1b7b9915d2dd938ecc28f6ed9cfa2  # 发布后回填为 v0.5.4 release commit 的完整哈希
+    commit: f056028f265bd839c88598c3cd016177490f6470  # = tag v0.5.4 release commit
     sudo:
       - apt-get update
       # cmake：dufs 默认开 `tls` feature → rustls 0.23 的 aws-lc-sys 会被编译，
