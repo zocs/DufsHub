@@ -152,15 +152,18 @@ class DufsForegroundService : Service() {
                     else -> "port $port"
                 }
             } else address
-            val (title, text, stopLabel) = when (lang) {
-                "zh" -> Triple("FileInfra 文件分享", "服务运行中（$display）", "停止分享")
-                "zhTW" -> Triple("FileInfra 檔案分享", "服務運行中（$display）", "停止分享")
-                else -> Triple("FileInfra File Sharing", "Running ($display)", "Stop")
+
+            val (fileLabel, clipLabel, stopLabel) = when (lang) {
+                "zh" -> Triple("文件分享", "剪 切 板", "停止分享")
+                "zhTW" -> Triple("檔案分享", "剪 貼 板", "停止分享")
+                else -> Triple("File Sharing", "Clipboard", "Stop")
             }
 
+            val firstLine = "$fileLabel: $display"
+
             builder
-                .setContentTitle(title)
-                .setContentText(text)
+                .setContentTitle("FileInfra")
+                .setContentText(firstLine)
                 // Alpha-only drawable: adaptive launcher mipmaps render as a washed
                 // gray square in the status bar.
                 .setSmallIcon(R.drawable.ic_stat_notify)
@@ -174,17 +177,14 @@ class DufsForegroundService : Service() {
                 )
                 .setOngoing(true)
 
-            // 剪贴板服务可用时展开为两行：主地址 + 剪贴板地址（小字）。
-            // 折叠状态只显示主地址一行，展开才露出剪贴板行。
+            // 剪贴板服务可用时展开为两行，冒号对齐：
+            // 折叠：文件分享：http://192.168.1.5:5000
+            // 展开：文件分享：http://192.168.1.5:5000
+            //       剪 切 板：http://192.168.1.5:6000
             if (clipboardAddress.isNotBlank()) {
-                val cbLabel = when (lang) {
-                    "zh" -> "剪贴板"
-                    "zhTW" -> "剪貼板"
-                    else -> "Clipboard"
-                }
                 builder.setStyle(
                     Notification.BigTextStyle()
-                        .bigText("$text\n$cbLabel: $clipboardAddress")
+                        .bigText("$firstLine\n$clipLabel: $clipboardAddress")
                 )
             }
 
