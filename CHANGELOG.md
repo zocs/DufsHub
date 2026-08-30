@@ -6,10 +6,12 @@
 ## [Unreleased]
 
 **中文：**
-- ✨ 共享剪贴板：服务运行时可与局域网内所有浏览器实时同步剪贴板（独立端口 = 主服务端口 + 5000，同一端口 HTTP 页面 + WebSocket 双向推送，零第三方依赖）。
+- ✨ 共享剪贴板：服务运行时可与局域网内所有浏览器实时同步剪贴板（独立端口 = dufs 端口 + 2000，默认 7000；同一端口 HTTP 页面 + WebSocket 双向推送，零第三方依赖）。
+- 🔧 剪贴板端口避开浏览器不安全端口（6000=X11 等，浏览器直接拒绝访问）。
 
 **English:**
-- ✨ Shared clipboard: while the server is running, all LAN browsers can sync clipboard content in real time (separate port = main port + 5000; HTTP page + WebSocket push on the same port, zero third-party deps).
+- ✨ Shared clipboard: while the server is running, all LAN browsers can sync clipboard content in real time (separate port = dufs port + 2000, default 7000; HTTP page + WebSocket push on the same port, zero third-party deps).
+- 🔧 Clipboard port avoids browser-unsafe ports (6000=X11 etc., browsers refuse to open them).
 
 ## [v0.5.5](https://github.com/zocs/fileinfra/releases/tag/v0.5.5) (2026-08-30)
 
