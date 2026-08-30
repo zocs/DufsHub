@@ -1,0 +1,5 @@
+Opening a file from the transfer log no longer does nothing: a clear message is shown when the file has been moved or deleted, or when no app can open it
+Fixed file access failing on devices where the shared folder is not readable; startup shows a clear reason
+The transfer log keeps failed requests (e.g. 403) for easier troubleshooting
+Added Android universal and per-ABI installers (arm64 / armv7 / x86_64)
+Added a basic sharing page entry for devices with older WebViews (Chromium 55-79)

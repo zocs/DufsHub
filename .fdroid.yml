@@ -3,13 +3,19 @@ Categories:
 
 License: MIT
 AuthorName: zocs
+AuthorEmail: zocs@users.noreply.github.com
+AuthorWebSite: https://github.com/zocs
 WebSite: https://github.com/zocs/fileinfra
 SourceCode: https://github.com/zocs/fileinfra
 IssueTracker: https://github.com/zocs/fileinfra/issues
 Changelog: https://github.com/zocs/fileinfra/releases
 
 AutoName: FileInfra
-Summary: The hub for dufs — one-tap LAN file sharing via browser
+
+# 上架文案以 fastlane/metadata/android/ 为准（F-Droid 优先读 fastlane，本文件
+# 里的 Summary/Description 只在 fastlane 缺该语言时兜底）。改文案请两边同步，
+# 别在这里单独演化出一份来。
+Summary: One-tap LAN file sharing — the other device only needs a browser
 Description: |-
   FileInfra is a Dufs-based, lightweight cross-platform file distribution
   GUI optimized for air-gapped LANs and restricted industrial environments.
@@ -22,40 +28,69 @@ Description: |-
   * Upload files from any browser
   * QR code for easy access
   * File transfer log
-  * Customizable permissions
-  * Multi-language support
+  * Customizable permissions (read-only, upload, full)
+  * Multi-language support (English, 简体中文, 繁體中文)
   * Material 3 design
+
+  Your files stay on your local network — nothing leaves your device.
 
 RepoType: git
 Repo: https://github.com/zocs/fileinfra
 
 Builds:
+  # 0.5.2 起才有可复现的 Android 构建；更早版本的历史被 rewrite 过（见
+  # docs/handoff.md 的 rename 一节），不回填。
   - versionName: 0.5.2
     versionCode: 47
-    commit: 3be86d42f5056e87b04b218ab768b7a3c4767619
+    # 必须是 Repo 默认分支上可达的 commit。上一版这里写的是 3be86d42…，
+    # 那是 rewrite 之前的悬空对象，`git checkout` 直接失败。
+    commit: 08d58b7b5569fca47d6498572b95ae0d0a594411
     sudo:
       - apt-get update
-      - apt-get install -y protobuf-compiler build-essential
+      # cmake：dufs 默认开 `tls` feature → rustls 0.23 的 aws-lc-sys 会被编译，
+      #       它的 build.rs 需要 CMake + 一个 C 编译器。
+      # build-essential：同上，提供 cc。
+      # （原来这里写的是 protobuf-compiler，dufs 依赖树里没有任何 protobuf，
+      #   是从别的工程抄来的；CI 一直没暴露这个问题，因为 GitHub 的
+      #   ubuntu-latest runner 自带 cmake。）
+      - apt-get install -y cmake build-essential
     output: build/app/outputs/flutter-apk/app-release.apk
     srclibs:
-      - flutter@3.41.5
+      # 与 .github/workflows/build.yml 的 FLUTTER_VERSION 保持一致：F-Droid
+      # 构建用的版本必须和 CI 验证过的是同一个，否则等于拿未测过的工具链出包
+      # （handoff 里「本地 Flutter ≠ CI」踩过好几次）。
+      - flutter@3.47.0
     prebuild:
+      # 工具链版本与 CI 的 dtolnay/rust-toolchain@stable 对齐（CI 当时解析到
+      # 1.98.x）。发版时如果 CI 的 stable 升了，这里要一起升。
       - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain
-        1.86.0 --no-modify-path
+        1.98.0 --profile minimal --no-modify-path
       - source "$HOME/.cargo/env"
-      - rustup target add aarch64-linux-android
+      # 三个 ABI 都要：`flutter build apk` 出的是 universal APK，缺哪个 ABI
+      # 的 libdufs.so，那个 ABI 的设备装上就是一句「dufs 服务组件缺失」。
+      - rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
       - export ANDROID_NDK_HOME="$$NDK$$"
       - export PUB_CACHE="$(pwd)/.pub-cache"
       - $$flutter$$/bin/flutter config --no-analytics
       - $$flutter$$/bin/flutter pub get
       - bash scripts/build_dufs.sh android-arm64
+      - bash scripts/build_dufs.sh android-arm
+      - bash scripts/build_dufs.sh android-x86_64
     scanignore:
+      # libdufs.so / assets/dufs/* 都是 prebuild 阶段从源码编出来的，仓库里
+      # 不含任何预编译二进制（.gitignore 已挡），这里只是让扫描器别把构建
+      # 中间产物当成预编译件。
       - android/app/src/main/jniLibs
+      - assets/dufs
       - .pub-cache
     build:
       - export PUB_CACHE="$(pwd)/.pub-cache"
       - $$flutter$$/bin/flutter build apk --release --build-name=0.5.2 --build-number=47
-    ndk: r27
+    # 与 CI 的 EXPECTED_NDK_MAJOR 一致。注意：真正保证老设备能加载的是
+    # scripts/build_dufs.sh 里强制的 -Wl,-z,max-page-size=0x1000 +
+    # --pack-dyn-relocs=none，CI 的 page-alignment guard 会校验；NDK 版本本身
+    # 换大版本时只需确认 guard 仍然通过。
+    ndk: r29
 
 AllowedAPKSigningKeys: e4db9054ff7070e4bee3387e928e1388facfec0526da10e4510282e9d26aed6a
 

@@ -105,7 +105,12 @@ EOF
     ln -sfn /cache/gradle android/.gradle
     ln -sfn /cache/kotlin android/.kotlin
     flutter pub get
+    # universal APK 包含三个 ABI，libdufs.so 三个都得编，否则没编到的
+    # 那类设备装上就是「dufs 服务组件缺失」（与 .github/workflows/build.yml
+    # 的 android job 保持一致）。
     bash scripts/build_dufs.sh android-arm64
+    bash scripts/build_dufs.sh android-arm
+    bash scripts/build_dufs.sh android-x86_64
     flutter build apk --release
     cp build/app/outputs/flutter-apk/*.apk /outputs/apk/
   '

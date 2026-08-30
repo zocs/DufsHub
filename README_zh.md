@@ -71,7 +71,7 @@
 | 平台 | 文件 | |
 |:---|:---|:---:|
 | 🪟 **Windows** | `fileinfra-*-windows-x64-setup.exe`（安装版）或 `.zip`（便携版） | ✅ 已测试 |
-| 🤖 **Android** | `fileinfra-*-android-arm64.apk` | ✅ 已测试 |
+| 🤖 **Android** | `fileinfra-*-android-universal.apk`（arm64-v8a · armeabi-v7a · x86_64） | ✅ 已测试 |
 | 🐧 **Linux x64** | `.AppImage`（零依赖）或 `.deb` | ✅ 已测试 |
 | 🐧 **Linux ARM64** | `.AppImage` 或 `.deb`（理论兼容麒麟/UOS） | ✅ 已测试 |
 | 🍎 **macOS** | `FileInfra-*-macos-arm64.zip` | ⚠️ 未实测 |

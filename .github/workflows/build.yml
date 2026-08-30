@@ -55,8 +55,9 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-          key: cargo-aarch64-linux-android-${{ hashFiles('scripts/build_dufs.sh') }}
+          key: cargo-android-${{ hashFiles('scripts/build_dufs.sh') }}
           restore-keys: |
+            cargo-android-
             cargo-aarch64-linux-android-
       - name: Cache Gradle
         uses: actions/cache@v6
@@ -70,7 +71,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android
+          targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android
       - name: Resolve and check NDK version
         run: |
           NDK_DIR=$(find "$ANDROID_HOME/ndk" -maxdepth 1 -type d -name '[0-9]*' | sort -V | tail -1)
@@ -82,19 +83,33 @@ jobs:
           fi
           echo "ANDROID_NDK_HOME=$NDK_DIR" >> $GITHUB_ENV
       - name: Compile dufs from source
-        run: bash scripts/build_dufs.sh android-arm64
+        # 三个 ABI 都要编：`flutter build apk` 出的是 universal APK，里面
+        # 包含 armeabi-v7a / arm64-v8a / x86_64 三套 libapp.so+libflutter.so，
+        # 但 libdufs.so 只在我们编了的那个 ABI 下存在。缺 ABI 的设备上应用
+        # 装得上、界面也跑，一点启动就是「dufs 服务组件缺失」——而
+        # F-Droid 的用户机队恰好偏旧、偏 32 位。
+        run: |
+          bash scripts/build_dufs.sh android-arm64
+          bash scripts/build_dufs.sh android-arm
+          bash scripts/build_dufs.sh android-x86_64
       - name: Verify libdufs.so page alignment
         run: |
-          SO=android/app/src/main/jniLibs/arm64-v8a/libdufs.so
-          [ -f "$SO" ] || { echo "::error::missing $SO"; exit 1; }
-          BAD=$(readelf -lW "$SO" | awk '/^  LOAD/ {print $NF}' | sort -u | grep -vxE "${{ env.ANDROID_LIBDUFS_ALIGN }}" || true)
-          if [ -n "$BAD" ]; then
-            echo "::error::libdufs.so LOAD alignment != ${{ env.ANDROID_LIBDUFS_ALIGN }}: got $BAD"
-            echo "::error::Older Android (< API 35) dynamic linker mishandles 16KB-aligned binaries -> dufs binds but networking syscalls misbehave."
-            echo "::error::Check scripts/build_dufs.sh android-arm64 has -Wl,-z,max-page-size=${{ env.ANDROID_LIBDUFS_ALIGN }}."
-            exit 1
-          fi
-          echo "OK: libdufs.so all LOAD segments aligned to ${{ env.ANDROID_LIBDUFS_ALIGN }}"
+          set -e
+          for ABI in arm64-v8a armeabi-v7a x86_64; do
+            SO=android/app/src/main/jniLibs/$ABI/libdufs.so
+            if [ ! -f "$SO" ]; then
+              echo "::error::missing $SO — devices on $ABI will install but fail to start the server."
+              exit 1
+            fi
+            BAD=$(readelf -lW "$SO" | awk '/^  LOAD/ {print $NF}' | sort -u | grep -vxE "${{ env.ANDROID_LIBDUFS_ALIGN }}" || true)
+            if [ -n "$BAD" ]; then
+              echo "::error::$SO LOAD alignment != ${{ env.ANDROID_LIBDUFS_ALIGN }}: got $BAD"
+              echo "::error::Older Android (< API 35) dynamic linker mishandles 16KB-aligned binaries -> dufs binds but networking syscalls misbehave."
+              echo "::error::Check scripts/build_dufs.sh android-* has -Wl,-z,max-page-size=${{ env.ANDROID_LIBDUFS_ALIGN }}."
+              exit 1
+            fi
+            echo "OK: $SO aligned to ${{ env.ANDROID_LIBDUFS_ALIGN }} ($(du -h "$SO" | cut -f1))"
+          done
       - name: Decode Keystore
         if: env.KEYSTORE_BASE64 != ''
         env:
@@ -109,18 +124,28 @@ jobs:
           echo "::error::Release tag ${{ github.ref_name }} pushed but KEYSTORE_BASE64 secret is missing."
           echo "::error::Refusing to build a debug-signed APK to the release channel."
           exit 1
-      - name: Build APK
+      - name: Build universal APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: flutter build apk --release
-      - name: Rename APK
-        run: cp build/app/outputs/flutter-apk/app-release.apk fileinfra-${{ env.VERSION }}-android-arm64.apk
+      - name: Build per-ABI APKs
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: flutter build apk --release --split-per-abi
+      - name: Rename APKs
+        # universal（三个 ABI 合一）+ 分架构包；文件名别再写 arm64 误导用户。
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk fileinfra-${{ env.VERSION }}-android-universal.apk
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk fileinfra-${{ env.VERSION }}-android-arm64.apk
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk fileinfra-${{ env.VERSION }}-android-armv7.apk
+          cp build/app/outputs/flutter-apk/app-x86_64-release.apk fileinfra-${{ env.VERSION }}-android-x86_64.apk
       - uses: actions/upload-artifact@v7
         with:
           name: android
           path: |
-            fileinfra-${{ env.VERSION }}-android-arm64.apk
+            fileinfra-${{ env.VERSION }}-android-*.apk
 
   build-windows:
     name: Windows x64

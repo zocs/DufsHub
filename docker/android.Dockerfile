@@ -68,7 +68,11 @@ RUN unset HTTP_PROXY HTTPS_PROXY ALL_PROXY NO_PROXY http_proxy https_proxy all_p
     && chmod -R a+rwX "$ANDROID_HOME"
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --no-modify-path \
+    # universal APK 含三个 ABI，libdufs.so 三个都得能编（与 build_dufs.sh 的
+    # ensure_rust_target 硬检查对齐，缺一个就会在构建早期快速失败）
     && rustup target add aarch64-linux-android \
+       armv7-linux-androideabi \
+       x86_64-linux-android \
     && chmod -R a+rX /usr/local/cargo /usr/local/rustup
 
 WORKDIR /work

@@ -1,6 +1,7 @@
 package cc.merr.fileinfra
 
 import android.Manifest
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -8,11 +9,14 @@ import android.os.Build
 import android.os.Environment
 import android.provider.Settings
 import android.util.Log
+import android.webkit.MimeTypeMap
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.io.File
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "cc.merr.fileinfra/native"
@@ -130,6 +134,19 @@ class MainActivity : FlutterActivity() {
                 "isServiceRunning" -> {
                     result.success(DufsForegroundService.isRunning)
                 }
+                // 点击传输记录打开本地文件。不走 open_filex：它在 Android 13+
+                // 会先索要 READ_MEDIA_IMAGES/VIDEO/AUDIO，而它实际是用
+                // FileProvider + grantUriPermissions 把文件递出去的，那三个
+                // 媒体权限对本应用是多余的（F-Droid 会按 NEW_PERMISSIONS
+                // 反特性标记）。清单里已 tools:node="remove" 剥掉。
+                "openFile" -> {
+                    val path = call.argument<String>("path") ?: ""
+                    if (path.isEmpty()) {
+                        result.error("invalid_args", "path empty", null)
+                        return
+                    }
+                    result.success(openWithSystemViewer(File(path)))
+                }
                 "getServiceInfo" -> {
                     val info = hashMapOf<String, Any>(
                         "isRunning" to DufsForegroundService.isRunning,
@@ -141,6 +158,53 @@ class MainActivity : FlutterActivity() {
                 }
                 else -> result.notImplemented()
             }
+    }
+
+    /// 返回 done / notFound / isDir / noApp / error:<msg>，由 Dart 侧映射文案。
+    private fun openWithSystemViewer(file: File): String {
+        if (!file.exists()) return "notFound"
+        if (file.isDirectory) return "isDir"
+        val mime = guessMimeType(file.name)
+            ?: "application/octet-stream"
+        // minSdk = 24（Flutter 默认）已经 ≥ N，FileProvider 总是可用；
+        // 没有写 file:// 回退分支的必要（24+ 上递 file:// URI 会直接
+        // FileUriExposedException）。
+        val uri = try {
+            FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+        } catch (e: IllegalArgumentException) {
+            // 不在 file_paths.xml 覆盖范围内（root-path 已覆盖全盘，
+            // 真走到这里说明路径本身有问题）
+            return "error:${e.javaClass.simpleName}"
+        }
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, mime)
+            addCategory(Intent.CATEGORY_DEFAULT)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            // APK 走系统安装器，必须 NEW_TASK；其余用 SINGLE_TOP，
+            // 与 open_filex 原有行为一致。
+            addFlags(
+                if (mime == "application/vnd.android.package-archive") {
+                    Intent.FLAG_ACTIVITY_NEW_TASK
+                } else {
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+                }
+            )
+        }
+        return try {
+            startActivity(intent)
+            "done"
+        } catch (e: ActivityNotFoundException) {
+            "noApp"
+        } catch (e: Exception) {
+            "error:${e.javaClass.simpleName}"
+        }
+    }
+
+    private fun guessMimeType(name: String): String? {
+        val ext = name.substringAfterLast('.', "").lowercase()
+        if (ext.isEmpty()) return null
+        if (ext == "apk") return "application/vnd.android.package-archive"
+        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
     }
 
     /// Dart 侧不等待授权结果（settings 页/启动流程都会重新查

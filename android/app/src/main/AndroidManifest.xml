@@ -5,6 +5,13 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="29" tools:replace="android:maxSdkVersion"/>
+    <!-- open_filex 会注入三个 Android 13 媒体权限，但本应用从不枚举媒体库：
+         点击记录打开文件走自有 openFile channel（FileProvider + 逐条 grant）。
+         插件清单里保留声明只会让 F-Droid 打 NEW_PERMISSIONS 反特性、让用户
+         多看到一次授权弹窗，按最小权限原则剥掉。 -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" tools:node="remove"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
@@ -41,6 +48,18 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- 点击传输记录打开文件时用（MainActivity.openFile）。root-path 覆盖
+             全盘是故意的：分享目录由用户自选，可能在任何挂载点。URI 权限仍是
+             按次 FLAG_GRANT_READ_URI_PERMISSION 授予，不扩大常驻访问面。 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"/>
+        </provider>
         <!-- specialUse 而非 dataSync：Android 15+ 对 dataSync 有 6h/24h 预算，
              超时会硬杀进程（RemoteServiceException）；本地文件分享属用户主动
              发起的 special-use 场景。 -->

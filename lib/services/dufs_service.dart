@@ -237,29 +237,39 @@ class DufsService extends ChangeNotifier {
     _lang = config.language;
     await _prepareLogFile();
     if (config.path.isEmpty) {
-      _error = 'No directory';
+      _error = _l10n.t('srv.noDir');
       notifyListeners();
       return;
     }
     // 单文件模式检查文件是否存在，目录模式检查目录是否存在
     if (config.shareSingleFile) {
       if (!await File(config.path).exists()) {
-        _error = 'File not found';
+        _error = _l10n.t('srv.fileGone');
         notifyListeners();
         return;
       }
       final parentDir = p.dirname(config.path);
       if (!await Directory(parentDir).exists()) {
-        _error = 'Parent directory not found';
+        _error = _l10n.t('srv.parentGone');
         notifyListeners();
         return;
       }
     } else {
       if (!await Directory(config.path).exists()) {
-        _error = 'Directory not found';
+        _error = _l10n.t('srv.dirGone');
         notifyListeners();
         return;
       }
+    }
+    // exists() 通过不代表 dufs 读得了：能 stat 不能 opendir 的目录（Android 10
+    // 分区存储、内存卡、Android/data 下）会让 dufs 对每个请求回 403 Forbidden
+    // （server.rs handle_list_dir ← fs::read_dir 报错），而 UI 照样把二维码和
+    // URL 递出去。启动前先按 dufs 的读法探一次，失败就直接拒绝启动。
+    final readableError = await _probeReadable(config);
+    if (readableError != null) {
+      _error = readableError;
+      notifyListeners();
+      return;
     }
     // Validate permission consistency
     final permError = config.validatePermissions(config.language);
@@ -550,7 +560,7 @@ class DufsService extends ChangeNotifier {
     final now = DateTime.now();
     _lastActivityAt = now;
     _lastActivity = now.toIso8601String().substring(11, 19);
-    if (_isFileTransfer(entry)) {
+    if (showInLog(entry)) {
       _transferLogs.insert(0, entry);
       if (_transferLogs.length > 200) {
         _transferLogs.removeRange(200, _transferLogs.length);
@@ -565,8 +575,65 @@ class DufsService extends ChangeNotifier {
     if (_ingestLine(line)) notifyListeners();
   }
 
-  bool _isFileTransfer(TransferLog entry) {
+  Future<String?> _probeReadable(ServerConfig c) =>
+      probeReadableError(c, _l10n, log: _log);
+
+  /// 可读性探测：以 dufs 实际使用的方式（opendir / open）试读一次。
+  /// 返回 null 表示可读，否则返回可直接展示的本地化错误。
+  ///
+  /// 只取第一条目录项：`Stream.isEmpty` 收到首个事件即取消订阅，不会为
+  /// 十万文件的目录做完整 readdir（那会卡住启动）。
+  @visibleForTesting
+  static Future<String?> probeReadableError(
+    ServerConfig c,
+    AppLocalizations l10n, {
+    void Function(String)? log,
+  }) async {
+    final say = log ?? _noopLog;
+    try {
+      if (c.shareSingleFile) {
+        final raf = await File(c.path).open();
+        await raf.close();
+      } else {
+        await Directory(c.path).list(followLinks: false).isEmpty;
+      }
+      return null;
+    } on FileSystemException catch (e) {
+      final key =
+          c.shareSingleFile ? 'srv.fileNotReadable' : 'srv.dirNotReadable';
+      final reason = e.osError?.message ?? e.message;
+      say('readability probe failed for ${c.path}: $reason');
+      // 分区存储那段建议只对 Android 有意义：桌面走到这里通常是权限位、
+      // SELinux 或断开的网络盘，照抄 Android 文案会把人带偏。
+      final hint = !c.shareSingleFile && Platform.isAndroid
+          ? ' ${l10n.t('srv.dirNotReadableAndroid')}'
+          : '';
+      return '${l10n.t(key)}（$reason）$hint';
+    } catch (e) {
+      // 探测本身失败（超时等）≠ 目录不可读：放行，让 dufs 自己决定。
+      // 真出现 403 时现在能在传输记录里看到（showInLog 保留失败请求）。
+      say('readability probe inconclusive for ${c.path}: $e');
+      return null;
+    }
+  }
+
+  static void _noopLog(String _) {}
+
+  /// 该请求是否值得进「传输记录」。
+  @visibleForTesting
+  static bool showInLog(TransferLog entry) {
     final path = entry.path;
+    // 失败请求必须留痕：用户报「浏览器只显示 Forbidden」时，证据就是这条
+    // `GET / 403`，而旧过滤规则恰好把 path=='/' 全丢了。
+    if (entry.status >= 400) {
+      if (path.contains('/dufs-assets/')) return false;
+      if (path.endsWith('.ico') ||
+          path.endsWith('.css') ||
+          path.endsWith('.js')) {
+        return false;
+      }
+      return true;
+    }
     if (path == '/' || path.isEmpty) return false;
     if (path.endsWith('/')) return false;
     if (path.endsWith('.css') ||

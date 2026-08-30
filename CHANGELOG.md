@@ -3,6 +3,22 @@
 > 所有版本均可在 [GitHub Releases](https://github.com/zocs/fileinfra/releases) 下载。
 > All versions available at [GitHub Releases](https://github.com/zocs/fileinfra/releases).
 
+## [v0.5.3](https://github.com/zocs/fileinfra/releases/tag/v0.5.3) (2026-08-30)
+
+**中文：**
+- 🐛 点击传输记录打开文件：由无响应优化为给出明确提示（如文件已被移动或删除、没有可用的打开应用）；不再弹出多余的媒体权限申请。
+- 🐛 修复部分设备上分享目录不可读导致无法访问文件的问题：启动时给出明确原因。
+- ✨ 传输记录保留访问失败的请求（如 403），便于远程排查。
+- 📦 新增 Android universal 与分架构安装包（arm64 / armv7 / x86_64）。
+- 🌐 为旧版 WebView（Chromium 55-79）设备访问提供基础分享页面入口。
+
+**English:**
+- 🐛 Opening a file from the transfer log no longer does nothing: a clear message is shown when the file has been moved or deleted, or when no app can open it. Extra media-permission prompts are gone as well.
+- 🐛 Fixed file access failing on devices where the shared folder is not readable: startup now shows a clear reason.
+- ✨ The transfer log keeps failed requests (e.g. 403) for easier remote troubleshooting.
+- 📦 Added Android universal and per-ABI installers (arm64 / armv7 / x86_64).
+- 🌐 Added a basic sharing page entry for devices with older WebViews (Chromium 55-79).
+
 ## [v0.5.2](https://github.com/zocs/fileinfra/releases/tag/v0.5.2) (2026-08-23)
 
 **中文：**

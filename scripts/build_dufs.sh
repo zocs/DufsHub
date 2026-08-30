@@ -1,17 +1,38 @@
 #!/bin/bash
 # build_dufs.sh - Compile dufs from source for a given platform
 # Usage: bash scripts/build_dufs.sh <platform>
-#   platform: android-arm64 | linux-x86_64 | linux-arm64 | windows-x86_64 | macos-arm64 | macos-x86_64 | ios-arm64
+#   platform: android-arm64 | android-arm | android-x86_64 | linux-x86_64 | linux-arm64 | windows-x86_64 | macos-arm64 | macos-x86_64 | ios-arm64
 #
 # Builds dufs as a cdylib (shared library) for FFI embedding in Flutter.
 # The output is a .so / .dll / .dylib that exposes dufs_start / dufs_stop / dufs_is_running.
 set -euo pipefail
 
-DUFS_VERSION="v0.46.0-fix3"
+DUFS_VERSION="v0.46.0-fix4"
 DUFS_REPO="https://github.com/zocs/dufs.git"
 PLATFORM=${1:?Usage: $0 <platform>}
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# 确保 $RUST_TARGET 已安装。原来各处写的是
+#   command -v rustup >/dev/null 2>&1 && rustup target add "$RUST_TARGET"
+# ——rustup 不在 PATH（发行版自包的 rust）时会被静默跳过，然后在 cargo 深处
+# 炸出「can't find crate for `core`」，报错完全指不到根因（本地实测踩过）。
+ensure_rust_target() {
+  command -v rustup >/dev/null 2>&1 && rustup target add "$RUST_TARGET"
+  local sysroot
+  sysroot=$(rustc --print sysroot)
+  if [ ! -d "$sysroot/lib/rustlib/$RUST_TARGET/lib" ]; then
+    echo "ERROR: Rust target '$RUST_TARGET' is not installed." >&2
+    echo "       rustc sysroot: $sysroot" >&2
+    if command -v rustup >/dev/null 2>&1; then
+      echo "       Fix: rustup target add $RUST_TARGET" >&2
+    else
+      echo "       rustup is not on PATH: install rustup (https://rustup.rs), or" >&2
+      echo "       your distro's rust-std package for $RUST_TARGET." >&2
+    fi
+    exit 1
+  fi
+}
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 OUTPUT_DIR="${PROJECT_DIR}/assets/dufs"
 
@@ -69,10 +90,25 @@ if command -v rustup >/dev/null 2>&1; then
 fi
 
 case "$PLATFORM" in
-  android-arm64)
-    RUST_TARGET="aarch64-linux-android"
+  android-arm64|android-arm|android-x86_64)
+    # 三个 ABI 共用同一套交叉编译配置。Flutter 的 `flutter build apk` 默认出
+    # universal APK（armeabi-v7a + arm64-v8a + x86_64），只编 arm64 的话另外
+    # 两个 ABI 的 libdufs.so 是缺的：应用装得上、界面也跑，但一点启动就报
+    # 「dufs 服务组件缺失」。32 位老设备（Kirin 65x 这类只跑 32 位用户空间
+    # 的华为平板）和 x86_64 模拟器都踩这条。
+    case "$PLATFORM" in
+      android-arm64)
+        RUST_TARGET="aarch64-linux-android"; ABI_DIR="arm64-v8a"
+        CLANG_PREFIX="aarch64-linux-android" ;;
+      android-arm)
+        RUST_TARGET="armv7-linux-androideabi"; ABI_DIR="armeabi-v7a"
+        CLANG_PREFIX="armv7a-linux-androideabi" ;;
+      android-x86_64)
+        RUST_TARGET="x86_64-linux-android"; ABI_DIR="x86_64"
+        CLANG_PREFIX="x86_64-linux-android" ;;
+    esac
 
-    command -v rustup >/dev/null 2>&1 && rustup target add "$RUST_TARGET"
+    ensure_rust_target
 
     if [ -n "${ANDROID_NDK_HOME:-}" ]; then
       NDK="$ANDROID_NDK_HOME"
@@ -97,16 +133,16 @@ case "$PLATFORM" in
     # segfaults at SEGV_MAPERR on its first PLT call. Pinning to API 24 keeps lld
     # on the legacy relocation format that works everywhere from minSdk up.
     ANDROID_API="${ANDROID_API:-24}"
-    LINKER="${TOOLCHAIN}/${HOST_TAG}/bin/aarch64-linux-android${ANDROID_API}-clang"
+    LINKER="${TOOLCHAIN}/${HOST_TAG}/bin/${CLANG_PREFIX}${ANDROID_API}-clang"
     if [ ! -x "$LINKER" ]; then
-      echo "ERROR: Missing ${LINKER}. Available aarch64 clang wrappers:"
-      ls "${TOOLCHAIN}/${HOST_TAG}/bin/" 2>/dev/null | grep 'aarch64-linux-android.*-clang$' | head -20
+      echo "ERROR: Missing ${LINKER}. Available ${CLANG_PREFIX} clang wrappers:"
+      ls "${TOOLCHAIN}/${HOST_TAG}/bin/" 2>/dev/null | grep "${CLANG_PREFIX}.*-clang$" | head -20
       exit 1
     fi
 
     mkdir -p .cargo
     cat > .cargo/config.toml << EOF
-[target.aarch64-linux-android]
+[target.${RUST_TARGET}]
 linker = "${LINKER}"
 # Three belt-and-suspenders linker flags for Android compat with NDK r28+:
 # 1. --pack-dyn-relocs=none: forbid DT_RELR packed relocations (only API 30+
@@ -131,7 +167,7 @@ EOF
 
     cargo build --release --target "$RUST_TARGET"
 
-    LIB_OUTPUT="${PROJECT_DIR}/android/app/src/main/jniLibs/arm64-v8a/libdufs.so"
+    LIB_OUTPUT="${PROJECT_DIR}/android/app/src/main/jniLibs/${ABI_DIR}/libdufs.so"
     mkdir -p "$(dirname "$LIB_OUTPUT")"
     cp "target/${RUST_TARGET}/release/dufs" "$LIB_OUTPUT"
     echo "Built: $LIB_OUTPUT ($(du -h "$LIB_OUTPUT" | cut -f1))"
@@ -140,7 +176,7 @@ EOF
   linux-x86_64)
     RUST_TARGET="x86_64-unknown-linux-gnu"
 
-    command -v rustup &>/dev/null && rustup target add "$RUST_TARGET"
+    ensure_rust_target
     cargo build --lib --release --target "$RUST_TARGET"
 
     cp "target/${RUST_TARGET}/release/libdufs.so" "${OUTPUT_DIR}/libdufs-linux-x86_64.so"
@@ -150,7 +186,7 @@ EOF
   linux-arm64)
     RUST_TARGET="aarch64-unknown-linux-gnu"
 
-    command -v rustup >/dev/null 2>&1 && rustup target add "$RUST_TARGET"
+    ensure_rust_target
     sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
 
     mkdir -p .cargo
@@ -176,7 +212,7 @@ EOF
     else
       # Cross-compile from Linux
       RUST_TARGET="x86_64-pc-windows-gnu"
-      command -v rustup >/dev/null 2>&1 && rustup target add "$RUST_TARGET"
+      ensure_rust_target
       sudo apt-get update && sudo apt-get install -y gcc-mingw-w64-x86-64
       cat > .cargo/config.toml <<XEOF
 [target.x86_64-pc-windows-gnu]
@@ -192,7 +228,7 @@ XEOF
   macos-arm64)
     RUST_TARGET="aarch64-apple-darwin"
 
-    command -v rustup >/dev/null 2>&1 && rustup target add "$RUST_TARGET"
+    ensure_rust_target
     cargo build --lib --release --target "$RUST_TARGET"
 
     cp "target/${RUST_TARGET}/release/libdufs.dylib" "${OUTPUT_DIR}/libdufs-macos-arm64.dylib"
@@ -202,7 +238,7 @@ XEOF
   macos-x86_64)
     RUST_TARGET="x86_64-apple-darwin"
 
-    command -v rustup >/dev/null 2>&1 && rustup target add "$RUST_TARGET"
+    ensure_rust_target
     cargo build --lib --release --target "$RUST_TARGET"
 
     cp "target/${RUST_TARGET}/release/libdufs.dylib" "${OUTPUT_DIR}/libdufs-macos-x86_64.dylib"
@@ -214,7 +250,7 @@ XEOF
     RUST_TARGET="aarch64-apple-ios"
     FRAMEWORKS_DIR="${PROJECT_DIR}/ios/Frameworks"
 
-    command -v rustup >/dev/null 2>&1 && rustup target add "$RUST_TARGET"
+    ensure_rust_target
     # --no-default-features drops dufs's only default feature: tls.
     # Since dufs v0.46.0, tls pulls rustls's aws-lc-rs provider (aws-lc-sys C
     # objects), whose cmake build targets the host SDK's min iOS (26.5) while
@@ -231,7 +267,7 @@ XEOF
 
   *)
     echo "Unknown platform: $PLATFORM"
-    echo "Supported: android-arm64, linux-x86_64, linux-arm64, windows-x86_64, macos-arm64, macos-x86_64, ios-arm64"
+    echo "Supported: android-arm64, android-arm, android-x86_64, linux-x86_64, linux-arm64, windows-x86_64, macos-arm64, macos-x86_64, ios-arm64"
     exit 1
     ;;
 esac
