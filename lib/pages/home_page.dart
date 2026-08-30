@@ -835,6 +835,57 @@ class _HomePageState extends State<HomePage>
               ),
             ),
             const SizedBox(height: 8),
+            // 共享剪贴板入口
+            if (service.clipboardUrl != null)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.content_paste, size: 16, color: Theme.of(context).colorScheme.onPrimaryContainer),
+                  const SizedBox(width: 6),
+                  Text(
+                    l10n.t('home.clipboard'),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: Icon(Icons.qr_code, size: 18),
+                    onPressed: () => _showQrDialog(service.clipboardUrl!),
+                    tooltip: l10n.t('home.qrCode'),
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    padding: EdgeInsets.zero,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                  InkWell(
+                    onTap: () {
+                      Clipboard.setData(ClipboardData(text: service.clipboardUrl!));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(l10n.t('home.copyUrl'))),
+                      );
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            service.clipboardUrl!,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              decoration: TextDecoration.underline,
+                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(Icons.copy, size: 14, color: Theme.of(context).colorScheme.onPrimaryContainer),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            const SizedBox(height: 8),
             // Stats
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

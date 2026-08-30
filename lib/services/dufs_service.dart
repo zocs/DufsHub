@@ -11,6 +11,7 @@ import '../l10n/app_localizations.dart';
 import '../models/server_config.dart';
 import '../models/transfer_log.dart';
 import 'dufs_ffi.dart';
+import 'clipboard_service.dart';
 
 /// Whether to use FFI (in-process) instead of spawning dufs as child process.
 /// Desktop platforms (Linux/macOS/Windows) use FFI to avoid AppImage sandbox,
@@ -31,6 +32,7 @@ class DufsService extends ChangeNotifier {
   /// 重入守卫：_isRunning 要到启动链尾段才置位，resume 恢复与用户点击
   /// 可并发触发两次启动（UI 的 _isServerTransitioning 只护住按钮）。
   bool _isStarting = false;
+  final ClipboardService _clipboard = ClipboardService();
   /// 当前 UI 语言，用于服务层错误/提示文案。
   String _lang = 'zh';
   String? _serverUrl;
@@ -57,6 +59,17 @@ class DufsService extends ChangeNotifier {
 
   bool get isRunning => _isRunning;
   String? get serverUrl => _serverUrl;
+
+  /// 剪贴板旁路服务展示地址（host 复用主服务地址，端口 +5000）。
+  /// 服务未启动或剪贴板服务未绑定成功时返回 null。
+  String? get clipboardUrl {
+    if (!_isRunning || _serverUrl == null) return null;
+    final host = Uri.parse(_serverUrl!).host;
+    final cbPort = _clipboard.port;
+    if (cbPort == null) return null;
+    final h = host.contains(':') ? '[$host]' : host;
+    return 'http://$h:$cbPort';
+  }
   String? get localIp => _localIp;
   String? get error => _error;
   String? get portInfo => _portInfo;
@@ -405,6 +418,8 @@ class DufsService extends ChangeNotifier {
       _log('server: $_serverUrl, all: $_allAddresses');
       // Start polling log file for transfer records
       _startLogFilePolling();
+      // 剪贴板旁路服务：独立端口 = dufs 基础端口 + 5000，与 dufs 同生同死
+      await _clipboard.start(actualPort);
       notifyListeners();
     } catch (e) {
       // FFI 已起来的情况下不能只清状态：stopServer 会因 !_isRunning 拒停，
@@ -793,6 +808,7 @@ class DufsService extends ChangeNotifier {
     _logFilePath = null;
     _logFilePosition = 0;
     _logFileRemainder = '';
+    await _clipboard.stop();
     notifyListeners();
   }
 
