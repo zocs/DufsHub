@@ -44,6 +44,11 @@ class DufsService extends ChangeNotifier {
   /// 网卡名称列表，与 allAddresses 一一对应
   List<String> _allInterfaceNames = [];
 
+  /// 用户选定的优先展示地址（默认地址）；null = 列表第一个
+  String? _preferredAddress;
+  String? get preferredAddress => _preferredAddress;
+
+
   /// 实际绑定的端口（可能因冲突自动 +1，与 ServerConfig.port 解耦）
   int _activePort = 0;
 
@@ -100,6 +105,18 @@ class DufsService extends ChangeNotifier {
     } catch (_) {
       return null;
     }
+  }
+
+  /// IPv6 地址加方括号：http://[fe80::1]:5000
+  static String _formatHost(String ip) => ip.contains(':') ? '[$ip]' : ip;
+
+  /// 切换优先展示的地址（默认地址）并更新 serverUrl。
+  /// ip 不在当前地址列表时忽略（保留原默认）。
+  void setPreferredAddress(String? ip) {
+    if (ip == null || !_allAddresses.contains(ip)) return;
+    _preferredAddress = ip;
+    _serverUrl = 'http://${_formatHost(ip)}:$_activePort';
+    notifyListeners();
   }
 
   /// 获取所有可用网络接口的 IPv4 地址及网卡名称
@@ -371,7 +388,14 @@ class DufsService extends ChangeNotifier {
         _allAddresses.add('127.0.0.1');
         _allInterfaceNames.add('Local');
       }
-      _serverUrl = 'http://${_allAddresses.first}:$actualPort';
+      // 默认地址跟随用户选择；网络变化后旧地址失效时回退到列表第一个
+      final preferred =
+          config.preferredAddress != null &&
+              _allAddresses.contains(config.preferredAddress)
+          ? config.preferredAddress!
+          : _allAddresses.first;
+      _preferredAddress = preferred;
+      _serverUrl = 'http://${_formatHost(preferred)}:$actualPort';
       _log('server: $_serverUrl, all: $_allAddresses');
       // Start polling log file for transfer records
       _startLogFilePolling();

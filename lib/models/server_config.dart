@@ -63,6 +63,12 @@ class ServerConfig {
   /// 目录有 index.html 时自动渲染
   bool renderTryIndex;
 
+  /// 优先展示的网络地址（IP），为空则用列表第一个
+  String? preferredAddress;
+
+  /// 自定义主题色（ARGB），colorScheme == 'custom' 时生效
+  int customColor;
+
   ServerConfig({
     this.path = '',
     this.port = 5000,
@@ -82,6 +88,8 @@ class ServerConfig {
     this.shareSingleFile = false,
     this.hideSystemFiles = true,
     this.renderTryIndex = false,
+    this.preferredAddress,
+    this.customColor = 0xFFFF6B5A,
   });
 
   /// 转为 JSON Map
@@ -103,6 +111,8 @@ class ServerConfig {
     'shareSingleFile': shareSingleFile,
     'hideSystemFiles': hideSystemFiles,
     'renderTryIndex': renderTryIndex,
+    'preferredAddress': preferredAddress,
+    'customColor': customColor,
   };
 
   /// 从 JSON Map 创建实例
@@ -124,6 +134,8 @@ class ServerConfig {
     shareSingleFile: json['shareSingleFile'] as bool? ?? false,
     hideSystemFiles: json['hideSystemFiles'] as bool? ?? true,
     renderTryIndex: json['renderTryIndex'] as bool? ?? false,
+    preferredAddress: json['preferredAddress'] as String?,
+    customColor: json['customColor'] as int? ?? 0xFFFF6B5A,
   );
 
   /// 从 SharedPreferences 加载配置。

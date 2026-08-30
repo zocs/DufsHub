@@ -48,7 +48,9 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final seedColor = presetColors[colorScheme] ?? const Color(0xFFFF6B5A);
+    final seedColor = colorScheme == 'custom'
+        ? Color(config.customColor)
+        : presetColors[colorScheme] ?? const Color(0xFFFF6B5A);
 
     return MaterialApp(
       navigatorKey: navigatorKey,

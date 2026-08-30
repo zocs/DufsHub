@@ -816,9 +816,9 @@ class _HomePageState extends State<HomePage>
               ),
             ),
             const SizedBox(height: 4),
-            // IP + Hint
+            // IP + Hint（跟随默认地址）
             Text(
-              '${l10n.t('home.localIp')}: ${service.localIp ?? 'N/A'}',
+              '${l10n.t('home.localIp')}: ${service.preferredAddress ?? service.localIp ?? 'N/A'}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(
                   context,
@@ -933,81 +933,119 @@ class _HomePageState extends State<HomePage>
             final urlPort = service.activePort != 0
                 ? service.activePort
                 : _config.port;
-            final url = 'http://$ip:$urlPort';
-            final isDefault = idx == 0;
+            final url = 'http://${_formatHost(ip)}:$urlPort';
+            // 默认地址跟随用户选择（service.preferredAddress），而不是固定第一个
+            final isDefault = ip == service.preferredAddress;
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
-              child: InkWell(
-                onTap: () {
-                  Clipboard.setData(ClipboardData(text: url));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${l10n.t('home.copyUrl')}: $url')),
-                  );
-                },
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDefault
-                        ? Theme.of(
-                            context,
-                          ).colorScheme.primaryContainer.withValues(alpha: 0.3)
-                        : Theme.of(context).colorScheme.surfaceContainerHighest
-                              .withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        isDefault ? Icons.star : Icons.link,
-                        size: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: isDefault
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withValues(alpha: 0.3)
+                      : Theme.of(context).colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    // 设为默认星标
+                    IconButton(
+                      icon: Icon(
+                        isDefault ? Icons.star : Icons.star_border,
+                        size: 20,
                         color: isDefault
                             ? Theme.of(context).colorScheme.primary
                             : Theme.of(context).colorScheme.outline,
                       ),
-                      const SizedBox(width: 4),
-                      if (ifaceName.isNotEmpty) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.outline.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            ifaceName,
-                            style: Theme.of(context).textTheme.labelSmall
-                                ?.copyWith(
-                                  color: Theme.of(context).colorScheme.outline,
-                                ),
-                          ),
+                      onPressed: () {
+                        if (isDefault) return;
+                        _config.preferredAddress = ip;
+                        _config.save();
+                        service.setPreferredAddress(ip);
+                      },
+                      tooltip: l10n.t('home.setDefault'),
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                      padding: EdgeInsets.zero,
+                    ),
+                    if (ifaceName.isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
                         ),
-                        const SizedBox(width: 8),
-                      ],
-                      Expanded(
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.outline.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                         child: Text(
-                          url,
-                          style: Theme.of(context).textTheme.bodySmall
+                          ifaceName,
+                          style: Theme.of(context).textTheme.labelSmall
                               ?.copyWith(
-                                fontWeight: isDefault ? FontWeight.w600 : null,
-                                decoration: TextDecoration.underline,
+                                color:
+                                    Theme.of(context).colorScheme.outline,
                               ),
                         ),
                       ),
-                      Icon(
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(
+                      child: Text(
+                        url,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: isDefault ? FontWeight.w600 : null,
+                          decoration: TextDecoration.underline,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    // 二维码按钮
+                    IconButton(
+                      icon: Icon(
+                        Icons.qr_code,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      onPressed: () => _showQrDialog(url),
+                      tooltip: l10n.t('home.qrCode'),
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                      padding: EdgeInsets.zero,
+                    ),
+                    // 复制按钮
+                    IconButton(
+                      icon: Icon(
                         Icons.copy,
-                        size: 14,
+                        size: 16,
                         color: Theme.of(context).colorScheme.outline,
                       ),
-                    ],
-                  ),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: url));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${l10n.t('home.copyUrl')}: $url'),
+                          ),
+                        );
+                      },
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                      padding: EdgeInsets.zero,
+                    ),
+                  ],
                 ),
               ),
             );
@@ -1016,6 +1054,64 @@ class _HomePageState extends State<HomePage>
       ),
     );
   }
+
+  /// 显示指定地址的二维码弹窗
+  void _showQrDialog(String url) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: QrImageView(
+                data: url,
+                version: QrVersions.auto,
+                size: 200,
+                backgroundColor: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 16),
+            InkWell(
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: url));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(l10n.t('home.copyUrl'))),
+                );
+                Navigator.pop(ctx);
+              },
+              child: Text(
+                url,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  decoration: TextDecoration.underline,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              l10n.t('home.scanHint'),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// IPv6 地址加方括号：http://[fe80::1]:5000
+  String _formatHost(String ip) => ip.contains(':') ? '[$ip]' : ip;
+
 
   Widget _stat(
     BuildContext context,

@@ -5,6 +5,7 @@ import '../constants.dart';
 import '../l10n/app_localizations.dart';
 import '../models/server_config.dart';
 import '../app.dart' show presetColors, appVersion;
+import '../widgets/color_picker_dialog.dart';
 
 class SettingsPage extends StatefulWidget {
   final ServerConfig config;
@@ -35,6 +36,8 @@ class _SettingsPageState extends State<SettingsPage> {
   // Cache permission state across page rebuilds
   bool? _cachedStorageGranted;
 
+  bool get _isCustomColor => widget.config.colorScheme == 'custom';
+
   final _languages = [
     {'code': 'zh', 'name': '简体中文'},
     {'code': 'zhTW', 'name': '繁體中文'},
@@ -47,6 +50,26 @@ class _SettingsPageState extends State<SettingsPage> {
     // Reset static cache on each app lifecycle start
     _cachedStorageGranted = null;
     _checkStorage();
+  }
+
+  /// 打开色盘选择自定义主题色
+  Future<void> _showColorPicker() async {
+    final picked = await showDialog<Color>(
+      context: context,
+      builder: (_) => ColorPickerDialog(
+        initialColor: Color(widget.config.customColor),
+        title: l10n.t('settings.colorPickerTitle'),
+        doneLabel: l10n.t('settings.colorPickerDone'),
+        cancelLabel: l10n.t('settings.colorPickerCancel'),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      widget.config.colorScheme = 'custom';
+      widget.config.customColor = picked.toARGB32();
+    });
+    widget.config.save();
+    widget.onColorChanged('custom');
   }
 
   Future<void> _checkStorage() async {
@@ -408,6 +431,51 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   );
                 }),
+                // 自定义颜色（色盘）
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: GestureDetector(
+                    onTap: _showColorPicker,
+                    child: Container(
+                      width: _isCustomColor ? 32 : 28,
+                      height: _isCustomColor ? 32 : 28,
+                      decoration: BoxDecoration(
+                        color: _isCustomColor
+                            ? Color(widget.config.customColor)
+                            : null,
+                        gradient: _isCustomColor
+                            ? null
+                            : const SweepGradient(
+                                colors: [
+                                  Color(0xFFFF0000),
+                                  Color(0xFFFFFF00),
+                                  Color(0xFF00FF00),
+                                  Color(0xFF00FFFF),
+                                  Color(0xFF0000FF),
+                                  Color(0xFFFF00FF),
+                                  Color(0xFFFF0000),
+                                ],
+                              ),
+                        shape: BoxShape.circle,
+                        border: _isCustomColor
+                            ? Border.all(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface,
+                                width: 2,
+                              )
+                            : null,
+                      ),
+                      child: Icon(
+                        _isCustomColor
+                            ? Icons.check
+                            : Icons.palette_outlined,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
