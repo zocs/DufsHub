@@ -1,0 +1,4 @@
+[en]
+The notification now shows both the file-sharing and clipboard addresses
+New shared clipboard: browsers on the same network can sync clipboard content in real time (default port 7000)
+The no-JS fallback page can now upload files, create folders, and delete items
