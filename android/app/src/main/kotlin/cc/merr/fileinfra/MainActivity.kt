@@ -129,7 +129,8 @@ class MainActivity : FlutterActivity() {
                 }
                 "updateNotificationAddress" -> {
                     val address = call.argument<String>("address") ?: ""
-                    DufsForegroundService.updateAddress(this, address)
+                    val clipboardAddress = call.argument<String>("clipboardAddress") ?: ""
+                    DufsForegroundService.updateAddress(this, address, clipboardAddress)
                     result.success(true)
                 }
                 "stopForegroundService" -> {

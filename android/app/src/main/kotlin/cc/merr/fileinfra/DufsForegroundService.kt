@@ -38,6 +38,9 @@ class DufsForegroundService : Service() {
         var currentAddress = ""
             private set
         @Volatile
+        var currentClipboardAddress = ""
+            private set
+        @Volatile
         var lastError: String? = null
             private set
 
@@ -68,6 +71,7 @@ class DufsForegroundService : Service() {
                     .putExtra("args", args.toTypedArray())
                     .putExtra("lang", prefs.getString("lang", "en") ?: "en")
                     .putExtra("address", prefs.getString("address", "") ?: "")
+                    .putExtra("clipboardAddress", prefs.getString("clipboardAddress", "") ?: "")
             } catch (_: Exception) {
                 null
             }
@@ -92,12 +96,13 @@ class DufsForegroundService : Service() {
 
         /// 用户切换默认地址后由 Dart 侧经 MethodChannel 调用：只更新
         /// 通知栏地址（含持久化，磁贴重启后仍能恢复），不重启服务。
-        fun updateAddress(context: Context, address: String) {
+        fun updateAddress(context: Context, address: String, clipboardAddress: String) {
             if (!isRunning) return
             currentAddress = address
             try {
                 context.getSharedPreferences(PREFS, MODE_PRIVATE).edit()
                     .putString("address", address)
+                    .putString("clipboardAddress", clipboardAddress)
                     .apply()
             } catch (_: Exception) {}
             val lang = context.getSharedPreferences(PREFS, MODE_PRIVATE)
@@ -105,13 +110,18 @@ class DufsForegroundService : Service() {
             val manager = context.getSystemService(NotificationManager::class.java)
             manager.notify(
                 NOTIFICATION_ID,
-                buildNotification(context, currentPort, address, currentPath, lang)
+                buildNotification(context, currentPort, address, clipboardAddress, currentPath, lang)
             )
         }
 
         /// 通知内容构建（companion 静态方法：updateAddress 与 onStartCommand
         /// 都要用，且后者可能在服务实例创建前调用）。
-        fun buildNotification(context: Context, port: Int, address: String, path: String, lang: String): Notification {
+        /// [address] 为空时降级为仅端口；[clipboardAddress] 非空时用 BigTextStyle
+        /// 展开显示两行（折叠只显示第一行主地址）。
+        fun buildNotification(
+            context: Context, port: Int, address: String, clipboardAddress: String,
+            path: String, lang: String
+        ): Notification {
             val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
             val pendingIntent = PendingIntent.getActivity(
                 context, 0, intent,
@@ -148,7 +158,7 @@ class DufsForegroundService : Service() {
                 else -> Triple("FileInfra File Sharing", "Running ($display)", "Stop")
             }
 
-            return builder
+            builder
                 .setContentTitle(title)
                 .setContentText(text)
                 // Alpha-only drawable: adaptive launcher mipmaps render as a washed
@@ -163,7 +173,22 @@ class DufsForegroundService : Service() {
                     ).build()
                 )
                 .setOngoing(true)
-                .build()
+
+            // 剪贴板服务可用时展开为两行：主地址 + 剪贴板地址（小字）。
+            // 折叠状态只显示主地址一行，展开才露出剪贴板行。
+            if (clipboardAddress.isNotBlank()) {
+                val cbLabel = when (lang) {
+                    "zh" -> "剪贴板"
+                    "zhTW" -> "剪貼板"
+                    else -> "Clipboard"
+                }
+                builder.setStyle(
+                    Notification.BigTextStyle()
+                        .bigText("$text\n$cbLabel: $clipboardAddress")
+                )
+            }
+
+            return builder.build()
         }
     }
 
@@ -186,6 +211,7 @@ class DufsForegroundService : Service() {
         val args = intent?.getStringArrayExtra("args") ?: emptyArray()
         val lang = intent?.getStringExtra("lang") ?: "en"
         val address = intent?.getStringExtra("address") ?: ""
+        val clipboardAddress = intent?.getStringExtra("clipboardAddress") ?: ""
 
         // Clear the previous run's failure at entry (before the lock): Dart's
         // start-flow poll reads this field within ~200ms of dispatch, and a
@@ -213,9 +239,9 @@ class DufsForegroundService : Service() {
             startGeneration++
             gen = startGeneration
             killDufs()
-            persistLaunch(port, path, args, lang, address)
+            persistLaunch(port, path, args, lang, address, clipboardAddress)
 
-            val notification = buildNotification(this, port, address, path, lang)
+            val notification = buildNotification(this, port, address, clipboardAddress, path, lang)
             // Android 14+ (API 34) requires the 3-arg startForeground with an
             // explicit service type. We use SPECIAL_USE (declared in the
             // manifest with PROPERTY_SPECIAL_USE_FGS_SUBTYPE): dataSync would
@@ -246,8 +272,9 @@ class DufsForegroundService : Service() {
                     currentPort = port
                     currentPath = path
                     currentAddress = address
+                    currentClipboardAddress = clipboardAddress
                     isRunning = true
-                    Log.d(TAG, "Service started: port=$port path=$path address=$address")
+                    Log.d(TAG, "Service started: port=$port path=$path address=$address clipboard=$clipboardAddress")
                 } else {
                     Log.e(TAG, "Failed to start dufs, stopping service (gen=$gen)")
                     stopForeground(STOP_FOREGROUND_REMOVE)
@@ -323,7 +350,7 @@ class DufsForegroundService : Service() {
         DufsQsTile.requestUpdate(this)
     }
 
-    private fun persistLaunch(port: Int, path: String, args: Array<String>, lang: String, address: String) {
+    private fun persistLaunch(port: Int, path: String, args: Array<String>, lang: String, address: String, clipboardAddress: String) {
         try {
             val arr = org.json.JSONArray()
             args.forEach { arr.put(it) }
@@ -333,6 +360,7 @@ class DufsForegroundService : Service() {
                 .putString("args", arr.toString())
                 .putString("lang", lang)
                 .putString("address", address)
+                .putString("clipboardAddress", clipboardAddress)
                 .apply()
         } catch (e: Exception) {
             Log.w(TAG, "persistLaunch failed: ${e.message}")
@@ -481,6 +509,7 @@ class DufsForegroundService : Service() {
         currentPort = 0
         currentPath = ""
         currentAddress = ""
+        currentClipboardAddress = ""
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

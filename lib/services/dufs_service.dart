@@ -132,8 +132,13 @@ class DufsService extends ChangeNotifier {
     notifyListeners();
     // 服务运行中则同步通知栏地址（Kotlin 侧 no-op if 未运行）。
     if (Platform.isAndroid && _isRunning) {
-      _ch.invokeMethod('updateNotificationAddress', {'address': _serverUrl})
-          .catchError((_) {});
+      final cbUrl = _clipboard.port != null
+          ? 'http://${_formatHost(ip)}:${_clipboard.port}'
+          : '';
+      _ch.invokeMethod('updateNotificationAddress', {
+        'address': _serverUrl!,
+        'clipboardAddress': cbUrl,
+      }).catchError((_) {});
     }
   }
 
@@ -421,6 +426,17 @@ class DufsService extends ChangeNotifier {
       // 剪贴板旁路服务：端口 = dufs 最终解析端口 + 1000（dufs 自动+1 时跟随），
       // 与 dufs 同生同死；自身被占再+1 最多 9 步，全被占则降级跳过。
       await _clipboard.start(actualPort);
+      // 通知栏更新：地址 + 剪贴板地址（startForegroundService 时 _serverUrl 尚未
+      // 确定，传的是空串，导致之前通知栏不显示地址——此处推送纠正）。
+      if (Platform.isAndroid) {
+        final cbUrl = _clipboard.port != null
+            ? 'http://${_formatHost(preferred)}:${_clipboard.port}'
+            : '';
+        _ch.invokeMethod('updateNotificationAddress', {
+          'address': _serverUrl!,
+          'clipboardAddress': cbUrl,
+        }).catchError((_) {});
+      }
       notifyListeners();
     } catch (e) {
       // FFI 已起来的情况下不能只清状态：stopServer 会因 !_isRunning 拒停，
