@@ -38,6 +38,7 @@ dependencies:
   file_picker: ^10.3.10
   shared_preferences: ^2.5.4
   qr_flutter: ^4.1.0
+  qr: ^3.0.2
   provider: ^6.1.5+1
   intl: ^0.20.2
   path: ^1.9.1

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:qr/qr.dart';
 
 /// 剪贴板旁路服务：同一端口同时提供 HTTP 页面 + WebSocket 实时同步。
 ///
@@ -116,6 +117,8 @@ class ClipboardService {
   void _handleRequest(HttpRequest req) {
     if (WebSocketTransformer.isUpgradeRequest(req)) {
       _upgradeToWs(req);
+    } else if (req.uri.path == '/qr') {
+      _serveQr(req);
     } else {
       _serveHtml(req);
     }
@@ -167,6 +170,63 @@ class ClipboardService {
       )
       ..write(_htmlPage())
       ..close();
+  }
+
+  // ── 二维码生成（纯 Dart，零第三方 JS/C 依赖） ──
+
+  /// GET /qr?text=... → image/svg+xml（离线路由，供页面 <img> 直接引用）。
+  void _serveQr(HttpRequest req) {
+    final text = req.uri.queryParameters['text'] ?? '';
+    if (text.isEmpty) {
+      req.response
+        ..statusCode = HttpStatus.badRequest
+        ..headers.contentType = ContentType.text
+        ..write('missing text parameter');
+      req.response.close();
+      return;
+    }
+    final svg = _qrSvg(text);
+    req.response
+      ..statusCode = HttpStatus.ok
+      ..headers.contentType = ContentType('image', 'svg+xml', charset: 'utf-8')
+      ..write(svg)
+      ..close();
+  }
+
+  /// 用 `qr` 包生成二维码矩阵（`QrCode.fromData` → `QrImage`），遍历
+  /// `isDark` 把同行的连续深色模块合并成 path 段输出 SVG。全程纯 Dart，
+  /// 不上网、不引前端 JS 库，老 WebView / 文本浏览器都能直接显示。
+  String _qrSvg(String text, {int scale = 4, int quiet = 4}) {
+    final img = QrImage(QrCode.fromData(
+      data: text,
+      errorCorrectLevel: QrErrorCorrectLevel.M,
+    ));
+    final n = img.moduleCount;
+    final size = (n + quiet * 2) * scale;
+    final buf = StringBuffer();
+    buf.write('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 $size $size" ');
+    buf.write('shape-rendering="crispEdges">');
+    buf.write('<rect width="$size" height="$size" fill="#ffffff"/>');
+    buf.write('<path d="');
+    for (var row = 0; row < n; row++) {
+      var col = 0;
+      while (col < n) {
+        if (img.isDark(row, col)) {
+          final start = col;
+          while (col < n && img.isDark(row, col)) {
+            col++;
+          }
+          final x = (start + quiet) * scale;
+          final y = (row + quiet) * scale;
+          final w = (col - start) * scale;
+          buf.write('M$x $y h$w v$scale h-$w z ');
+        } else {
+          col++;
+        }
+      }
+    }
+    buf.write('" fill="#000000"/></svg>');
+    return buf.toString();
   }
 
   // ── WS 消息协议 ──
@@ -221,6 +281,11 @@ textarea:focus{outline:none;border-color:#1976d2}
 .clipboard-display{background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px;margin-bottom:16px;min-height:60px;font-size:15px;line-height:1.5;word-break:break-all}
 .clipboard-display:empty::before{content:"暂无内容";color:#bbb}
 .clipboard-display .time{font-size:11px;color:#999;margin-top:8px;display:block}
+.section{margin-top:24px;padding-top:16px;border-top:1px solid #ddd}
+.section h2{font-size:16px;margin-bottom:8px}
+.qr-row{display:flex;gap:8px}
+.qr-row input{flex:1;padding:10px;font-size:14px;border:1px solid #ddd;border-radius:6px;font-family:inherit}
+.qr-row input:focus{outline:none;border-color:#1976d2}
 </style>
 </head>
 <body>
@@ -234,6 +299,18 @@ textarea:focus{outline:none;border-color:#1976d2}
 <div class="actions">
   <button class="btn btn-primary" onclick="send()">📤 发送到共享剪贴板</button>
   <button class="btn btn-secondary" onclick="copyFromDisplay()">📋 复制到本机</button>
+</div>
+
+<div class="section">
+  <h2>🔳 生成二维码</h2>
+  <div class="tip">输入文字或网址，点击生成二维码（图片由本机离线生成，不上传）</div>
+  <div class="qr-row">
+    <input id="qrtext" type="text" placeholder="输入文字或网址…" />
+    <button class="btn btn-primary" onclick="genQr()">生成</button>
+  </div>
+  <div id="qrwrap" style="display:none;text-align:center;margin-top:12px">
+    <img id="qrimg" alt="二维码" style="width:240px;height:240px;background:#fff;border:1px solid #ddd;border-radius:8px" />
+  </div>
 </div>
 
 <script>
@@ -286,6 +363,15 @@ function copyFromDisplay() {
   var text = displayEl.textContent;
   if (!text) return;
   navigator.clipboard.writeText(text).catch(function() {});
+}
+
+function genQr() {
+  var text = document.getElementById('qrtext').value.trim();
+  if (!text) return;
+  var wrap = document.getElementById('qrwrap');
+  var img = document.getElementById('qrimg');
+  img.src = '/qr?text=' + encodeURIComponent(text);
+  wrap.style.display = 'block';
 }
 
 connect();

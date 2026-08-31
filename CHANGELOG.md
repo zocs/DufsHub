@@ -5,6 +5,12 @@
 
 ## [Unreleased]
 
+**中文：**
+- 🔳 离线路由 `/qr?text=...`：剪贴板页面新增二维码生成区域，输入文字或网址即可生成 SVG 二维码，供手机扫码（纯本地生成，不上传网络）。
+
+**English:**
+- 🔳 Offline QR code generation at `/qr?text=...`: the clipboard page now has a QR generator — enter text or a URL and get a QR code SVG (generated locally, nothing uploaded).
+
 ## [v0.5.6](https://github.com/zocs/fileinfra/releases/tag/v0.5.6) (2026-08-30)
 
 **中文：**

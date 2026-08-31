@@ -122,4 +122,82 @@ void main() {
     }
     await dummy.close(force: true);
   });
+
+  test('GET /qr 返回 SVG 二维码（离线路由）', () async {
+    final dummy = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final svc = ClipboardService();
+    await svc.start(dummy.port);
+    final cbPort = svc.port!;
+
+    final hc = HttpClient();
+    final req = await hc.getUrl(Uri.parse('http://127.0.0.1:$cbPort/qr?text=hello'));
+    final res = await req.close();
+    expect(res.statusCode, HttpStatus.ok);
+    expect(res.headers.contentType?.mimeType, 'image/svg+xml');
+    final body = await res.transform(utf8.decoder).join();
+    expect(body, startsWith('<svg xmlns="http://www.w3.org/2000/svg"'));
+    expect(body, contains('<path d="'));
+    expect(body, endsWith('</svg>'));
+
+    await svc.stop();
+    await dummy.close(force: true);
+  });
+
+  test('GET /qr 缺 text 参数返回 400', () async {
+    final dummy = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final svc = ClipboardService();
+    await svc.start(dummy.port);
+    final cbPort = svc.port!;
+
+    final hc = HttpClient();
+    final req = await hc.getUrl(Uri.parse('http://127.0.0.1:$cbPort/qr'));
+    final res = await req.close();
+    expect(res.statusCode, HttpStatus.badRequest);
+
+    await svc.stop();
+    await dummy.close(force: true);
+  });
+
+  test('二维码生成是确定性的（同一文本 → 相同 SVG）', () async {
+    final dummy = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final svc = ClipboardService();
+    await svc.start(dummy.port);
+    final cbPort = svc.port!;
+
+    final hc = HttpClient();
+    Future<String> fetch(String text) async {
+      final req = await hc.getUrl(
+        Uri.parse('http://127.0.0.1:$cbPort/qr?text=${Uri.encodeQueryComponent(text)}'),
+      );
+      final res = await req.close();
+      expect(res.statusCode, HttpStatus.ok);
+      return res.transform(utf8.decoder).join();
+    }
+    final a = await fetch('https://example.com/path?q=1');
+    final b = await fetch('https://example.com/path?q=1');
+    final c = await fetch('different content');
+    expect(a, b);
+    expect(a, isNot(c));
+
+    await svc.stop();
+    await dummy.close(force: true);
+  });
+
+  test('页面 HTML 含二维码生成区域', () async {
+    final dummy = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final svc = ClipboardService();
+    await svc.start(dummy.port);
+    final cbPort = svc.port!;
+
+    final hc = HttpClient();
+    final req = await hc.getUrl(Uri.parse('http://127.0.0.1:$cbPort/'));
+    final res = await req.close();
+    final body = await res.transform(utf8.decoder).join();
+    expect(body, contains('生成二维码'));
+    expect(body, contains('genQr'));
+    expect(body, contains('/qr?text='));
+
+    await svc.stop();
+    await dummy.close(force: true);
+  });
 }
