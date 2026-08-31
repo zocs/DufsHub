@@ -3,7 +3,7 @@ name: Build & Release
 # 每次 CI 运行时带备注（run-name 显示在 Actions 列表里，便于区分用途）：
 # - 手动触发：gh workflow run build.yml -f note="<备注>"
 # - tag 触发：自动带版本号（如 v0.5.7 → “Build & Release · v0.5.7”）。
-run-name: "Build & Release${{ inputs.note != '' ? ' · ' + inputs.note : (github.ref_type == 'tag' ? ' · ' + github.ref_name : '') }}"
+run-name: "Build & Release${{ ' · ' + (inputs.note || github.ref_name || 'manual') }}"
 
 on:
   push:
