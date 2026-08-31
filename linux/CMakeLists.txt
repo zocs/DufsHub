@@ -2,6 +2,13 @@
 cmake_minimum_required(VERSION 3.13)
 project(runner LANGUAGES CXX)
 
+# -Wno-deprecated-literal-operator 是 GCC 的 warning flag（抑制 C++14 中
+# 弃用的字面量运算符警告）。clang 直到较新版本才认识它：Ubuntu 18.04 的
+# clang-10 直接报 unknown warning option（-Werror 下编译失败）。
+# 运行时探测编译器是否支持，支持才加——老 clang 上跳过，不影响任何平台。
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-Wno-deprecated-literal-operator" HAVE_WNO_DEPRECATED_LITERAL_OPERATOR)
+
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
 set(BINARY_NAME "fileinfra")
@@ -41,7 +48,10 @@ endif()
 # of modifying this function.
 function(APPLY_STANDARD_SETTINGS TARGET)
   target_compile_features(${TARGET} PUBLIC cxx_std_14)
-  target_compile_options(${TARGET} PRIVATE -Wall -Werror -Wno-deprecated-declarations -Wno-deprecated-literal-operator)
+  target_compile_options(${TARGET} PRIVATE -Wall -Werror -Wno-deprecated-declarations)
+  if(HAVE_WNO_DEPRECATED_LITERAL_OPERATOR)
+    target_compile_options(${TARGET} PRIVATE -Wno-deprecated-literal-operator)
+  endif()
   target_compile_options(${TARGET} PRIVATE "$<$<NOT:$<CONFIG:Debug>>:-O3>")
   target_compile_definitions(${TARGET} PRIVATE "$<$<NOT:$<CONFIG:Debug>>:NDEBUG>")
 endfunction()
