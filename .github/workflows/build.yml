@@ -320,6 +320,13 @@ jobs:
           path: /tmp/compat-out/*
 
   build-macos-arm64:
+    name: macOS ARM64
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
       - name: Cache cargo
         uses: actions/cache@v6
         with:
