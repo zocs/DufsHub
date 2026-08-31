@@ -296,4 +296,75 @@ void main() {
     await svc.stop();
     await dummy.close(force: true);
   });
+
+  test('GET /api/clipboard 返回当前共享文本（JSON）', () async {
+    final dummy = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final svc = ClipboardService();
+    await svc.start(dummy.port);
+    final cbPort = svc.port!;
+
+    final hc = HttpClient();
+    // 先 POST 写入，再 GET 读取
+    final post = await hc.postUrl(Uri.parse('http://127.0.0.1:$cbPort/api/clipboard'));
+    post.headers.contentType = ContentType.text;
+    post.write('hello from api');
+    final postRes = await post.close();
+    expect(postRes.statusCode, HttpStatus.ok);
+
+    final req = await hc.getUrl(Uri.parse('http://127.0.0.1:$cbPort/api/clipboard'));
+    final res = await req.close();
+    expect(res.statusCode, HttpStatus.ok);
+    expect(res.headers.contentType?.mimeType, 'application/json');
+    final body = await res.transform(utf8.decoder).join();
+    final json = jsonDecode(body) as Map;
+    expect(json['text'], 'hello from api');
+    expect(json['ts'], isA<int>());
+
+    await svc.stop();
+    await dummy.close(force: true);
+  });
+
+  test('POST /api/clipboard 广播给 WebSocket 客户端', () async {
+    final dummy = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final svc = ClipboardService();
+    await svc.start(dummy.port);
+    final cbPort = svc.port!;
+
+    final ws = await WebSocket.connect('ws://127.0.0.1:$cbPort/');
+    final gotMsg = Completer<String>();
+    ws.listen((d) {
+      final s = d as String;
+      if (s.contains('broadcast me')) gotMsg.complete(s);
+    });
+
+    final hc = HttpClient();
+    final post = await hc.postUrl(Uri.parse('http://127.0.0.1:$cbPort/api/clipboard'));
+    post.headers.contentType = ContentType.text;
+    post.write('broadcast me');
+    final postRes = await post.close();
+    expect(postRes.statusCode, HttpStatus.ok);
+
+    final msg = await gotMsg.future.timeout(const Duration(seconds: 2));
+    expect(msg, contains('broadcast me'));
+
+    await ws.close();
+    await svc.stop();
+    await dummy.close(force: true);
+  });
+
+  test('POST /api/clipboard 空 body 返回 400', () async {
+    final dummy = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final svc = ClipboardService();
+    await svc.start(dummy.port);
+    final cbPort = svc.port!;
+
+    final hc = HttpClient();
+    final post = await hc.postUrl(Uri.parse('http://127.0.0.1:$cbPort/api/clipboard'));
+    post.headers.contentType = ContentType.text;
+    final postRes = await post.close();
+    expect(postRes.statusCode, HttpStatus.badRequest);
+
+    await svc.stop();
+    await dummy.close(force: true);
+  });
 }

@@ -100,6 +100,9 @@ class ClipboardService {
     debugPrint('ClipboardService: stopped');
   }
 
+  /// 当前共享文本（供 Android 原生侧拉取剪贴板用）。
+  String? get text => _text;
+
   /// 设置剪贴板内容并广播给所有其他客户端（排除发送者自身）。
   void setText(String text, {WebSocket? source}) {
     _text = text;
@@ -117,6 +120,8 @@ class ClipboardService {
   void _handleRequest(HttpRequest req) {
     if (WebSocketTransformer.isUpgradeRequest(req)) {
       _upgradeToWs(req);
+    } else if (req.uri.path == '/api/clipboard') {
+      _serveClipboardApi(req);
     } else if (req.uri.path == '/qr') {
       _serveQr(req);
     } else {
@@ -170,6 +175,41 @@ class ClipboardService {
       )
       ..write(_htmlPage())
       ..close();
+  }
+
+  // ── 剪贴板 API（供 Android 原生通知按钮读写，绕开引擎依赖） ──
+
+  /// GET /api/clipboard → JSON 含当前文本与时间戳；
+  /// POST /api/clipboard → body 为纯文本，设置并广播给所有已连接页面。
+  void _serveClipboardApi(HttpRequest req) {
+    if (req.method == 'GET') {
+      req.response
+        ..statusCode = HttpStatus.ok
+        ..headers.contentType = ContentType.json
+        ..write(jsonEncode({'text': _text ?? '', 'ts': _updatedAt}))
+        ..close();
+    } else if (req.method == 'POST') {
+      req.cast<List<int>>().transform(utf8.decoder).join().then((body) {
+        if (body.isEmpty) {
+          req.response
+            ..statusCode = HttpStatus.badRequest
+            ..headers.contentType = ContentType.text
+            ..write('empty body')
+            ..close();
+          return;
+        }
+        setText(body);
+        req.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.text
+          ..write('ok')
+          ..close();
+      });
+    } else {
+      req.response
+        ..statusCode = HttpStatus.methodNotAllowed
+        ..close();
+    }
   }
 
   // ── 二维码生成（纯 Dart，零第三方 JS/C 依赖） ──

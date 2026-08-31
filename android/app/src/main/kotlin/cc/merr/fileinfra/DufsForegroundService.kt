@@ -24,6 +24,8 @@ class DufsForegroundService : Service() {
 
         const val ACTION_START = "cc.merr.fileinfra.action.START"
         const val ACTION_STOP = "cc.merr.fileinfra.action.STOP"
+        const val ACTION_SEND_CLIPBOARD = "cc.merr.fileinfra.action.SEND_CLIPBOARD"
+        const val ACTION_PULL_CLIPBOARD = "cc.merr.fileinfra.action.PULL_CLIPBOARD"
 
         @Volatile
         var isRunning = false
@@ -134,6 +136,11 @@ class DufsForegroundService : Service() {
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
 
+            val showClipboardButtons = context.getSharedPreferences(PREFS, MODE_PRIVATE)
+                .getBoolean("notifClipboard", true)
+
+            val clipboardPort = clipboardAddress.substringAfterLast(":").toIntOrNull()
+
             val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 Notification.Builder(context, CHANNEL_ID)
             } else {
@@ -177,6 +184,28 @@ class DufsForegroundService : Service() {
                 )
                 .setOngoing(true)
 
+            // 剪贴板按钮（发送/拉取）
+            if (showClipboardButtons && clipboardPort != null) {
+                val sendIntent = Intent(context, DufsForegroundService::class.java)
+                    .setAction(ACTION_SEND_CLIPBOARD)
+                val sendPendingIntent = PendingIntent.getService(
+                    context, 2, sendIntent,
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                )
+                val pullIntent = Intent(context, DufsForegroundService::class.java)
+                    .setAction(ACTION_PULL_CLIPBOARD)
+                val pullPendingIntent = PendingIntent.getService(
+                    context, 3, pullIntent,
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                )
+                builder.addAction(
+                    Notification.Action.Builder(null, "发送", sendPendingIntent).build()
+                )
+                builder.addAction(
+                    Notification.Action.Builder(null, "拉取", pullPendingIntent).build()
+                )
+            }
+
             // 剪贴板服务可用时展开为两行，冒号对齐：
             // 折叠：文件分享：http://192.168.1.5:5000
             // 展开：文件分享：http://192.168.1.5:5000
@@ -205,6 +234,14 @@ class DufsForegroundService : Service() {
             handleStop()
             return START_NOT_STICKY
         }
+        if (action == ACTION_SEND_CLIPBOARD) {
+            handleSendClipboard()
+            return START_NOT_STICKY
+        }
+        if (action == ACTION_PULL_CLIPBOARD) {
+            handlePullClipboard()
+            return START_NOT_STICKY
+        }
 
         val port = intent?.getIntExtra("port", 0) ?: 0
         val path = intent?.getStringExtra("path") ?: ""
@@ -212,6 +249,7 @@ class DufsForegroundService : Service() {
         val lang = intent?.getStringExtra("lang") ?: "en"
         val address = intent?.getStringExtra("address") ?: ""
         val clipboardAddress = intent?.getStringExtra("clipboardAddress") ?: ""
+        val notifClipboard = intent?.getBooleanExtra("notifClipboard", true) ?: true
 
         // Clear the previous run's failure at entry (before the lock): Dart's
         // start-flow poll reads this field within ~200ms of dispatch, and a
@@ -239,7 +277,7 @@ class DufsForegroundService : Service() {
             startGeneration++
             gen = startGeneration
             killDufs()
-            persistLaunch(port, path, args, lang, address, clipboardAddress)
+            persistLaunch(port, path, args, lang, address, clipboardAddress, notifClipboard)
 
             val notification = buildNotification(this, port, address, clipboardAddress, path, lang)
             // Android 14+ (API 34) requires the 3-arg startForeground with an
@@ -350,7 +388,7 @@ class DufsForegroundService : Service() {
         DufsQsTile.requestUpdate(this)
     }
 
-    private fun persistLaunch(port: Int, path: String, args: Array<String>, lang: String, address: String, clipboardAddress: String) {
+    private fun persistLaunch(port: Int, path: String, args: Array<String>, lang: String, address: String, clipboardAddress: String, notifClipboard: Boolean = true) {
         try {
             val arr = org.json.JSONArray()
             args.forEach { arr.put(it) }
@@ -361,10 +399,68 @@ class DufsForegroundService : Service() {
                 .putString("lang", lang)
                 .putString("address", address)
                 .putString("clipboardAddress", clipboardAddress)
+                .putBoolean("notifClipboard", notifClipboard)
                 .apply()
         } catch (e: Exception) {
             Log.w(TAG, "persistLaunch failed: ${e.message}")
         }
+    }
+
+    /// 发送剪贴板：读系统剪贴板 → POST 到本机剪贴板服务的 /api/clipboard，
+    /// 由服务广播给所有已连接的工具页。后台线程执行（网络/剪贴板都不可在主线程）。
+    private fun handleSendClipboard() {
+        Thread {
+            try {
+                val cm = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                val clip = cm.primaryClip ?: return@Thread
+                if (clip.itemCount == 0) return@Thread
+                val text = clip.getItemAt(0).coerceToText(this)?.toString() ?: return@Thread
+                if (text.isEmpty()) return@Thread
+                val port = currentClipboardAddress.substringAfterLast(":").toIntOrNull() ?: return@Thread
+                val url = java.net.URL("http://127.0.0.1:$port/api/clipboard")
+                val conn = url.openConnection() as java.net.HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.doOutput = true
+                conn.setRequestProperty("Content-Type", "text/plain; charset=utf-8")
+                conn.connectTimeout = 3000
+                conn.readTimeout = 3000
+                conn.outputStream.use { it.write(text.toByteArray(Charsets.UTF_8)) }
+                val code = conn.responseCode
+                Log.d(TAG, "send clipboard -> HTTP $code")
+                conn.disconnect()
+            } catch (e: Exception) {
+                Log.w(TAG, "send clipboard failed: ${e.message}")
+            }
+        }.start()
+    }
+
+    /// 拉取剪贴板：GET 本机剪贴板服务的 /api/clipboard，把共享内容写入系统剪贴板。
+    private fun handlePullClipboard() {
+        Thread {
+            try {
+                val port = currentClipboardAddress.substringAfterLast(":").toIntOrNull() ?: return@Thread
+                val url = java.net.URL("http://127.0.0.1:$port/api/clipboard")
+                val conn = url.openConnection() as java.net.HttpURLConnection
+                conn.requestMethod = "GET"
+                conn.connectTimeout = 3000
+                conn.readTimeout = 3000
+                if (conn.responseCode != 200) {
+                    Log.w(TAG, "pull clipboard HTTP ${conn.responseCode}")
+                    conn.disconnect()
+                    return@Thread
+                }
+                val json = conn.inputStream.bufferedReader(Charsets.UTF_8).readText()
+                conn.disconnect()
+                val obj = org.json.JSONObject(json)
+                val text = obj.optString("text", "")
+                if (text.isEmpty()) return@Thread
+                val cm = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                cm.setPrimaryClip(android.content.ClipData.newPlainText("FileInfra", text))
+                Log.d(TAG, "pull clipboard <- ${text.length} chars")
+            } catch (e: Exception) {
+                Log.w(TAG, "pull clipboard failed: ${e.message}")
+            }
+        }.start()
     }
 
     /// Runs on a worker thread. Only touches its own child handle; global

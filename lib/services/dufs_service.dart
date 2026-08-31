@@ -361,6 +361,7 @@ class DufsService extends ChangeNotifier {
           'args': args,
           'lang': config.language,
           'address': _serverUrl ?? '',
+          'notifClipboard': config.notifClipboard,
         });
         // Poll service status. Kotlin side runs a TCP-connect probe that can
         // take up to ~5s on slow devices; a fixed 500ms wait races with that

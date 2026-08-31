@@ -510,6 +510,21 @@ class _SettingsPageState extends State<SettingsPage> {
             );
           }),
 
+          // ========== Notification Clipboard Buttons (Android only) ==========
+          if (Theme.of(context).platform == TargetPlatform.android) ...[
+            const Divider(height: 24),
+            SwitchListTile(
+              dense: true,
+              title: Text(l10n.t('settings.notifClipboard')),
+              subtitle: Text(l10n.t('settings.notifClipboardHint')),
+              value: widget.config.notifClipboard,
+              onChanged: (v) async {
+                setState(() => widget.config.notifClipboard = v);
+                await widget.config.save();
+              },
+            ),
+          ],
+
           // ========== Close Behavior (Desktop only) ==========
           if (Theme.of(context).platform == TargetPlatform.windows ||
               Theme.of(context).platform == TargetPlatform.linux ||

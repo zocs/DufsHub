@@ -69,6 +69,9 @@ class ServerConfig {
   /// 自定义主题色（ARGB），colorScheme == 'custom' 时生效
   int customColor;
 
+  /// 通知栏是否显示「发送剪贴板 / 拉取剪贴板」按钮
+  bool notifClipboard;
+
   ServerConfig({
     this.path = '',
     this.port = 5000,
@@ -90,6 +93,7 @@ class ServerConfig {
     this.renderTryIndex = false,
     this.preferredAddress,
     this.customColor = 0xFFFF6B5A,
+    this.notifClipboard = true,
   });
 
   /// 转为 JSON Map
@@ -113,6 +117,7 @@ class ServerConfig {
     'renderTryIndex': renderTryIndex,
     'preferredAddress': preferredAddress,
     'customColor': customColor,
+    'notifClipboard': notifClipboard,
   };
 
   /// 从 JSON Map 创建实例
@@ -136,6 +141,7 @@ class ServerConfig {
     renderTryIndex: json['renderTryIndex'] as bool? ?? false,
     preferredAddress: json['preferredAddress'] as String?,
     customColor: json['customColor'] as int? ?? 0xFFFF6B5A,
+    notifClipboard: json['notifClipboard'] as bool? ?? true,
   );
 
   /// 从 SharedPreferences 加载配置。
