@@ -7,18 +7,26 @@
 FROM ubuntu:18.04
 
 # 基础工具
-# 注意：dufs 的 C 依赖（aws-lc-sys 等）使用 -Wno-deprecated-literal-operator
-# 标志，这是 GCC 标志，clang 6/10 都不支持。必须用 gcc 编译。
+# 双编译器策略：
+#  - dufs 的 C 依赖（aws-lc-sys 等）使用 -Wno-deprecated-literal-operator（GCC flag），
+#    clang 6/10 都不支持 → 必须用 gcc（ENV CC/CXX 强制）。
+#  - Flutter Linux 构建强制 CXX=clang++（CMake 里硬编码）→ 必须装 clang++，
+#    否则 CMake 报「Could not find compiler set in environment variable CXX: clang++」。
 RUN apt-get update && \
     apt-get install -y \
       curl git xz-utils unzip \
       ninja-build pkg-config \
+      clang-10 \
       libgtk-3-dev libsecret-1-dev \
       libayatana-appindicator3-dev \
       build-essential ca-certificates \
       libfuse2 && \
+    # 让 clang++ 命令可用（Flutter 用），但不要覆盖 cc/c++ 的默认（gcc 留给 dufs）
+    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-10 100 && \
+    update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-10 100 && \
     rm -rf /var/lib/apt/lists/*
-# 确保 Rust 的 cc crate 使用 gcc（不是 clang）
+# 确保 dufs 的 Rust cc crate 用 gcc（不是 clang）
+# 注意：Flutter 构建时会自己覆盖 CXX=clang++，不影响它
 ENV CC=gcc
 ENV CXX=g++
 
