@@ -1,0 +1,3 @@
+[en]
+The clipboard page is now a Tools page with QR code generator — supports multiple rows, style options (square/rounded/dots), custom colors, and SVG download
+Notification has "Send clipboard / Pull clipboard" buttons (toggleable in settings)

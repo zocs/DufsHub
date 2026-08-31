@@ -5,11 +5,19 @@
 
 ## [Unreleased]
 
+## [v0.5.7](https://github.com/zocs/fileinfra/releases/tag/v0.5.7) (2026-08-31)
+
 **中文：**
-- 🔳 离线路由 `/qr?text=...`：剪贴板页面新增二维码生成区域，输入文字或网址即可生成 SVG 二维码，供手机扫码（纯本地生成，不上传网络）。
+- 🔳 工具页：剪贴板 + 二维码生成二合一选项卡页面；支持多行同时生成、样式选择（方块/圆角/圆点）、前景/背景色自定义、SVG 下载。
+- 🔳 离线路由 `/qr?text=...`：输入文字或网址即可生成 SVG 二维码（纯本地 `qr` 包生成，不上传网络）。
+- 📋 通知栏新增「发送剪贴板/拉取剪贴板」按钮（设置页可关闭），单向发送将本机剪贴板推送至工具页，拉取则将工具页共享内容写入本机剪贴板。
+- 🔧 `/api/clipboard` HTTP 端点：GET 返回共享文本，POST 设置并广播。
 
 **English:**
-- 🔳 Offline QR code generation at `/qr?text=...`: the clipboard page now has a QR generator — enter text or a URL and get a QR code SVG (generated locally, nothing uploaded).
+- 🔳 Tools page: two-tab layout (clipboard + QR generator); supports multiple QR rows, style selection (square/rounded/dots), custom fg/bg colors, SVG download.
+- 🔳 Offline QR code generation at `/qr?text=...` — enter text or URL, get a QR SVG (generated locally via `qr` package).
+- 📋 Notification now has "Send clipboard / Pull clipboard" buttons (toggleable in settings). Send pushes the device clipboard to the Tools page; pull writes the shared content back to the device clipboard.
+- 🔧 `/api/clipboard` HTTP endpoint: GET returns the shared text, POST sets and broadcasts it.
 
 ## [v0.5.6](https://github.com/zocs/fileinfra/releases/tag/v0.5.6) (2026-08-30)
 
