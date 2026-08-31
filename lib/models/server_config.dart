@@ -189,14 +189,27 @@ class ServerConfig {
   }
 
   /// 保存配置到 SharedPreferences
+  ///
+  /// 与 [load] 对称：Linux 无 keyring / 无 secret service 时 secure storage
+  /// 抛错，绝不能让它阻断整个 save（否则首次设置向导点「开始使用」时
+  /// onSetupDone 不执行，UI 卡在向导，但 SharedPreferences 已写入成功 ——
+  /// 表现为“重启后才进首页”）。凭据写不进去按无凭据处理，不升级为异常。
   Future<void> save() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('server_config', jsonEncode(toJson()));
     if (auth == null || auth!.isEmpty) {
-      await _secureStorage.delete(key: _authStorageKey);
+      try {
+        await _secureStorage.delete(key: _authStorageKey);
+      } catch (e) {
+        debugPrint('secure storage delete failed: $e');
+      }
       return;
     }
-    await _secureStorage.write(key: _authStorageKey, value: auth!);
+    try {
+      await _secureStorage.write(key: _authStorageKey, value: auth!);
+    } catch (e) {
+      debugPrint('secure storage write failed: $e');
+    }
   }
 
   /// 权限预设: 只读

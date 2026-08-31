@@ -246,10 +246,24 @@ class _HomePageState extends State<HomePage>
   }
 
   Future<void> _pickDirectory() async {
-    final result = await FilePicker.platform.getDirectoryPath();
+    String? result;
+    try {
+      result = await FilePicker.platform.getDirectoryPath();
+    } catch (e) {
+      // Linux 走 XDG portal（DBus org.freedesktop.portal.Desktop）；无桌面
+      // /无 portal 服务（如 Ubuntu 18.04 离线环境）时抛异常而非返回 null。
+      // 静默失败会让用户以为按钮坏了，提示并引导用备用方案。
+      debugPrint('pickDirectory failed: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.t('home.pickDirFailed'))),
+      );
+      return;
+    }
     if (result != null) {
+      final path = result;
       setState(() {
-        _config.path = result;
+        _config.path = path;
         _config.shareSingleFile = false;
       });
       await _saveConfig();
@@ -257,13 +271,24 @@ class _HomePageState extends State<HomePage>
   }
 
   Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      allowMultiple: false,
-      lockParentWindow: true,
-    );
-    // 部分平台取消时返回非 null 但空列表，`files.single` 会 StateError
-    final files = result?.files ?? const <PlatformFile>[];
-    final pickedPath = files.isNotEmpty ? files.single.path : null;
+    PlatformFile? picked;
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        allowMultiple: false,
+        lockParentWindow: true,
+      );
+      // 部分平台取消时返回非 null 但空列表，`files.single` 会 StateError
+      final files = result?.files ?? const <PlatformFile>[];
+      picked = files.isNotEmpty ? files.single : null;
+    } catch (e) {
+      debugPrint('pickFile failed: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.t('home.pickDirFailed'))),
+      );
+      return;
+    }
+    final pickedPath = picked?.path;
     if (pickedPath != null && pickedPath.isNotEmpty) {
       setState(() {
         _config.path = pickedPath;
