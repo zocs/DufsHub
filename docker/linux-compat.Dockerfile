@@ -10,11 +10,16 @@ FROM ubuntu:18.04
 RUN apt-get update && \
     apt-get install -y \
       curl git xz-utils unzip \
-      ninja-build clang pkg-config \
+      ninja-build clang-10 lld-10 \
+      pkg-config \
       libgtk-3-dev libsecret-1-dev \
       libayatana-appindicator3-dev \
       build-essential ca-certificates \
       libfuse2 && \
+    # 确保 clang-10 是默认 clang（dufs 的 C 依赖需要 clang >= 7）
+    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-10 100 && \
+    update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-10 100 && \
+    update-alternatives --install /usr/bin/ld.lld ld.lld /usr/bin/ld.lld-10 100 && \
     rm -rf /var/lib/apt/lists/*
 
 # cmake 3.28（官方预编译二进制，静态）
