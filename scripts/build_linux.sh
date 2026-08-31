@@ -9,9 +9,12 @@ APP_NAME="fileinfra"
 BUILD_ROOT="${FILEINFRA_BUILD_ROOT:-build}"
 OUTPUT_DIR="${FILEINFRA_OUTPUT_DIR:-${BUILD_ROOT}/linux/output}"
 
+# 可选产物后缀：兼容构建（老 glibc 环境）传 -compat，避免与常规产物重名
+ARCHIVE_SUFFIX="${FILEINFRA_ARCHIVE_SUFFIX:-}"
+
 # Architecture mapping
 DEB_ARCH=$([ "$ARCH" = "aarch64" ] && echo "arm64" || echo "amd64")
-ARCHIVE_NAME="${APP_NAME}-${VERSION}-linux-${ARCH}"
+ARCHIVE_NAME="${APP_NAME}-${VERSION}${ARCHIVE_SUFFIX}-linux-${ARCH}"
 
 echo "Building FileInfra ${VERSION} for Linux ${ARCH}..."
 
