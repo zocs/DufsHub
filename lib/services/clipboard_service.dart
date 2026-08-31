@@ -176,7 +176,8 @@ class ClipboardService {
 
   /// GET /qr?text=... → image/svg+xml（离线路由，供页面 <img> 直接引用）。
   void _serveQr(HttpRequest req) {
-    final text = req.uri.queryParameters['text'] ?? '';
+    final qp = req.uri.queryParameters;
+    final text = qp['text'] ?? '';
     if (text.isEmpty) {
       req.response
         ..statusCode = HttpStatus.badRequest
@@ -185,7 +186,19 @@ class ClipboardService {
       req.response.close();
       return;
     }
-    final svg = _qrSvg(text);
+    // 样式参数：未知值回落默认，不报错（前端下拉是白名单）。
+    final style = qp['style'] ?? 'square';
+    // 颜色：允许带/不带 # 的 6 位 hex，非法回落默认。
+    String normColor(String? raw, String fallback) {
+      if (raw == null) return fallback;
+      var v = raw.trim();
+      if (v.startsWith('#')) v = v.substring(1);
+      return RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(v) ? v : fallback;
+    }
+
+    final fg = normColor(qp['fg'], '000000');
+    final bg = normColor(qp['bg'], 'ffffff');
+    final svg = _qrSvg(text, style: style, fg: fg, bg: bg);
     req.response
       ..statusCode = HttpStatus.ok
       ..headers.contentType = ContentType('image', 'svg+xml', charset: 'utf-8')
@@ -194,9 +207,19 @@ class ClipboardService {
   }
 
   /// 用 `qr` 包生成二维码矩阵（`QrCode.fromData` → `QrImage`），遍历
-  /// `isDark` 把同行的连续深色模块合并成 path 段输出 SVG。全程纯 Dart，
-  /// 不上网、不引前端 JS 库，老 WebView / 文本浏览器都能直接显示。
-  String _qrSvg(String text, {int scale = 4, int quiet = 4}) {
+  /// `isDark` 输出 SVG。全程纯 Dart，不上网、不引前端 JS 库，老 WebView /
+  /// 文本浏览器都能直接显示。支持三种样式 + 前后景颜色，零体积成本。
+  ///
+  /// - [style]：`square`（默认，方块）/ `rounded`（圆角）/ `dots`（圆点）
+  /// - [fg]/[bg]：6 位 hex，不带 #。
+  String _qrSvg(
+    String text, {
+    int scale = 4,
+    int quiet = 4,
+    String style = 'square',
+    String fg = '000000',
+    String bg = 'ffffff',
+  }) {
     final img = QrImage(QrCode.fromData(
       data: text,
       errorCorrectLevel: QrErrorCorrectLevel.M,
@@ -204,28 +227,56 @@ class ClipboardService {
     final n = img.moduleCount;
     final size = (n + quiet * 2) * scale;
     final buf = StringBuffer();
-    buf.write('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 $size $size" ');
-    buf.write('shape-rendering="crispEdges">');
-    buf.write('<rect width="$size" height="$size" fill="#ffffff"/>');
-    buf.write('<path d="');
-    for (var row = 0; row < n; row++) {
-      var col = 0;
-      while (col < n) {
-        if (img.isDark(row, col)) {
-          final start = col;
-          while (col < n && img.isDark(row, col)) {
-            col++;
+    buf.write('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 $size $size">');
+    buf.write('<rect width="$size" height="$size" fill="#$bg"/>');
+
+    if (style == 'dots') {
+      // 圆点：每个深色模块一个圆，直径约 0.9 模块
+      final r = (scale * 0.9 / 2.0).toStringAsFixed(2);
+      for (var row = 0; row < n; row++) {
+        for (var col = 0; col < n; col++) {
+          if (img.isDark(row, col)) {
+            final cx = (col + quiet) * scale + scale / 2.0;
+            final cy = (row + quiet) * scale + scale / 2.0;
+            buf.write('<circle cx="$cx" cy="$cy" r="$r" fill="#$fg"/>');
           }
-          final x = (start + quiet) * scale;
-          final y = (row + quiet) * scale;
-          final w = (col - start) * scale;
-          buf.write('M$x $y h$w v$scale h-$w z ');
-        } else {
-          col++;
         }
       }
+    } else if (style == 'rounded') {
+      // 圆角：每个深色模块一个圆角矩形
+      final rx = (scale * 0.4).toStringAsFixed(2);
+      for (var row = 0; row < n; row++) {
+        for (var col = 0; col < n; col++) {
+          if (img.isDark(row, col)) {
+            final x = (col + quiet) * scale;
+            final y = (row + quiet) * scale;
+            buf.write('<rect x="$x" y="$y" width="$scale" height="$scale" rx="$rx" fill="#$fg"/>');
+          }
+        }
+      }
+    } else {
+      // 方块（默认）：同行连续深色模块合并成一段 path，体积最小
+      buf.write('<path d="');
+      for (var row = 0; row < n; row++) {
+        var col = 0;
+        while (col < n) {
+          if (img.isDark(row, col)) {
+            final start = col;
+            while (col < n && img.isDark(row, col)) {
+              col++;
+            }
+            final x = (start + quiet) * scale;
+            final y = (row + quiet) * scale;
+            final w = (col - start) * scale;
+            buf.write('M$x $y h$w v$scale h-$w z ');
+          } else {
+            col++;
+          }
+        }
+      }
+      buf.write('" fill="#$fg"/>');
     }
-    buf.write('" fill="#000000"/></svg>');
+    buf.write('</svg>');
     return buf.toString();
   }
 
@@ -261,11 +312,16 @@ class ClipboardService {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FileInfra 共享剪贴板</title>
+<title>FileInfra 工具页</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,sans-serif;background:#f5f5f5;padding:20px;max-width:600px;margin:0 auto}
-h1{font-size:20px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+body{font-family:-apple-system,sans-serif;background:#f5f5f5;padding:20px;max-width:640px;margin:0 auto}
+h1{font-size:20px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.tabs{display:flex;gap:4px;background:#e9e9e9;border-radius:8px;padding:4px;margin-bottom:16px}
+.tab{flex:1;padding:8px 0;font-size:14px;border:none;border-radius:6px;background:transparent;cursor:pointer;font-weight:500;color:#555}
+.tab.active{background:#fff;color:#1976d2;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.pane{display:none}
+.pane.active{display:block}
 .status{font-size:13px;color:#666;margin-bottom:16px;padding:8px 12px;background:#fff;border-radius:8px;border:1px solid #ddd}
 .status.connected{color:#2e7d32;background:#e8f5e9;border-color:#a5d6a7}
 .status.disconnected{color:#c62828;background:#ffebee;border-color:#ef9a9a}
@@ -278,39 +334,60 @@ textarea:focus{outline:none;border-color:#1976d2}
 .btn-primary:hover{background:#1565c0}
 .btn-secondary{background:#e0e0e0;color:#333}
 .btn-secondary:hover{background:#bdbdbd}
+.btn-danger{background:#ffebee;color:#c62828}
+.btn-danger:hover{background:#ffcdd2}
 .clipboard-display{background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px;margin-bottom:16px;min-height:60px;font-size:15px;line-height:1.5;word-break:break-all}
 .clipboard-display:empty::before{content:"暂无内容";color:#bbb}
 .clipboard-display .time{font-size:11px;color:#999;margin-top:8px;display:block}
-.section{margin-top:24px;padding-top:16px;border-top:1px solid #ddd}
-.section h2{font-size:16px;margin-bottom:8px}
-.qr-row{display:flex;gap:8px}
-.qr-row input{flex:1;padding:10px;font-size:14px;border:1px solid #ddd;border-radius:6px;font-family:inherit}
-.qr-row input:focus{outline:none;border-color:#1976d2}
+.qr-opts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding:10px;background:#fff;border:1px solid #ddd;border-radius:8px}
+.qr-opts label{font-size:13px;color:#555;display:flex;align-items:center;gap:4px}
+.qr-opts select,.qr-opts input[type=color]{border:1px solid #ddd;border-radius:6px;background:#fff;height:26px}
+.qr-row{background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px;margin-bottom:10px}
+.qr-row .qr-input{display:flex;gap:8px;margin-bottom:10px}
+.qr-row .qr-input input{flex:1;padding:10px;font-size:14px;border:1px solid #ddd;border-radius:6px;font-family:inherit;min-width:0}
+.qr-row .qr-input input:focus{outline:none;border-color:#1976d2}
+.qr-out{display:none;text-align:center}
+.qr-out img{width:220px;height:220px;background:#fff;border:1px solid #ddd;border-radius:8px;object-fit:contain}
+.qr-out .dl{display:inline-flex;align-items:center;gap:4px;margin-top:8px;padding:6px 16px;font-size:13px;border:1px solid #ddd;border-radius:6px;background:#fff;color:#333;cursor:pointer;text-decoration:none}
+.qr-out .dl:hover{background:#f0f0f0}
 </style>
 </head>
 <body>
-<h1>📋 共享剪贴板</h1>
-<div id="status" class="status disconnected">⏳ 连接中…</div>
-<div class="tip">⚠️ 剪贴板内容对内网可见，请勿粘贴敏感信息</div>
+<h1>🧰 工具页</h1>
 
-<div id="display" class="clipboard-display"><span class="time" id="time"></span></div>
-
-<textarea id="input" placeholder="粘贴文本到这里…"></textarea>
-<div class="actions">
-  <button class="btn btn-primary" onclick="send()">📤 发送到共享剪贴板</button>
-  <button class="btn btn-secondary" onclick="copyFromDisplay()">📋 复制到本机</button>
+<div class="tabs">
+  <button class="tab active" id="tab-clipboard" onclick="switchTab('clipboard')">📋 剪贴板</button>
+  <button class="tab" id="tab-qr" onclick="switchTab('qr')">🔳 二维码</button>
 </div>
 
-<div class="section">
-  <h2>🔳 生成二维码</h2>
-  <div class="tip">输入文字或网址，点击生成二维码（图片由本机离线生成，不上传）</div>
-  <div class="qr-row">
-    <input id="qrtext" type="text" placeholder="输入文字或网址…" />
-    <button class="btn btn-primary" onclick="genQr()">生成</button>
+<!-- ── 剪贴板 ── -->
+<div id="pane-clipboard" class="pane active">
+  <div id="status" class="status disconnected">⏳ 连接中…</div>
+  <div class="tip">⚠️ 剪贴板内容对内网可见，请勿粘贴敏感信息</div>
+  <div id="display" class="clipboard-display"><span class="time" id="time"></span></div>
+  <textarea id="input" placeholder="粘贴文本到这里…"></textarea>
+  <div class="actions">
+    <button class="btn btn-primary" onclick="send()">📤 发送到共享剪贴板</button>
+    <button class="btn btn-secondary" onclick="copyFromDisplay()">📋 复制到本机</button>
   </div>
-  <div id="qrwrap" style="display:none;text-align:center;margin-top:12px">
-    <img id="qrimg" alt="二维码" style="width:240px;height:240px;background:#fff;border:1px solid #ddd;border-radius:8px" />
+</div>
+
+<!-- ── 二维码生成 ── -->
+<div id="pane-qr" class="pane">
+  <div class="tip">输入文字或网址，生成二维码（本机离线生成，不上传）；可添加多行同时生成</div>
+  <div class="qr-opts">
+    <label>样式
+      <select id="qrstyle">
+        <option value="square">方块</option>
+        <option value="rounded">圆角</option>
+        <option value="dots">圆点</option>
+      </select>
+    </label>
+    <label>前景色 <input type="color" id="qrfg" value="#000000"></label>
+    <label>背景色 <input type="color" id="qrbg" value="#ffffff"></label>
+    <button class="btn btn-secondary" onclick="addQrRow()">＋ 添加一行</button>
   </div>
+  <div id="qrrows"></div>
 </div>
 
 <script>
@@ -320,6 +397,65 @@ var displayEl = document.getElementById('display');
 var timeEl = document.getElementById('time');
 var inputEl = document.getElementById('input');
 var reconnectTimer = null;
+
+function switchTab(name) {
+  var panes = document.querySelectorAll('.pane');
+  for (var i = 0; i < panes.length; i++) {
+    panes[i].className = 'pane' + (panes[i].id === 'pane-' + name ? ' active' : '');
+  }
+  var tabs = document.querySelectorAll('.tab');
+  for (var j = 0; j < tabs.length; j++) {
+    tabs[j].className = 'tab' + (tabs[j].id === 'tab-' + name ? ' active' : '');
+  }
+}
+
+function qrUrl(text) {
+  var style = document.getElementById('qrstyle').value;
+  var fg = document.getElementById('qrfg').value.replace('#', '');
+  var bg = document.getElementById('qrbg').value.replace('#', '');
+  return '/qr?text=' + encodeURIComponent(text) + '&style=' + style + '&fg=' + fg + '&bg=' + bg;
+}
+
+function addQrRow() {
+  var rows = document.getElementById('qrrows');
+  var row = document.createElement('div');
+  row.className = 'qr-row';
+  row.innerHTML =
+    '<div class="qr-input">' +
+      '<input type="text" placeholder="输入文字或网址…">' +
+      '<button class="btn btn-primary" onclick="genQr(this)">生成</button>' +
+      '<button class="btn btn-danger" onclick="delQrRow(this)">✕</button>' +
+    '</div>' +
+    '<div class="qr-out"><img alt="二维码"><br><a class="dl" onclick="downloadQr(this)">⬇ 下载 SVG</a></div>';
+  rows.appendChild(row);
+  row.querySelector('input').focus();
+}
+
+function genQr(btn) {
+  var row = btn.parentNode.parentNode;
+  var input = row.querySelector('input');
+  var text = input.value.trim();
+  if (!text) return;
+  var img = row.querySelector('.qr-out img');
+  img.src = qrUrl(text);
+  row.querySelector('.qr-out').style.display = 'block';
+}
+
+function delQrRow(btn) {
+  btn.parentNode.parentNode.remove();
+}
+
+function downloadQr(el) {
+  var row = el.parentNode.parentNode;
+  var img = row.querySelector('.qr-out img');
+  if (!img.src) return;
+  var a = document.createElement('a');
+  a.href = img.src;
+  a.download = 'qrcode.svg';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
 
 function connect() {
   var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -365,15 +501,7 @@ function copyFromDisplay() {
   navigator.clipboard.writeText(text).catch(function() {});
 }
 
-function genQr() {
-  var text = document.getElementById('qrtext').value.trim();
-  if (!text) return;
-  var wrap = document.getElementById('qrwrap');
-  var img = document.getElementById('qrimg');
-  img.src = '/qr?text=' + encodeURIComponent(text);
-  wrap.style.display = 'block';
-}
-
+addQrRow();
 connect();
 </script>
 </body>

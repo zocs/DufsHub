@@ -183,7 +183,7 @@ void main() {
     await dummy.close(force: true);
   });
 
-  test('页面 HTML 含二维码生成区域', () async {
+  test('页面 HTML 含工具页标题 + 选项卡 + 二维码区域', () async {
     final dummy = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final svc = ClipboardService();
     await svc.start(dummy.port);
@@ -193,9 +193,105 @@ void main() {
     final req = await hc.getUrl(Uri.parse('http://127.0.0.1:$cbPort/'));
     final res = await req.close();
     final body = await res.transform(utf8.decoder).join();
+    expect(body, contains('工具页'));
+    expect(body, contains('剪贴板'));
     expect(body, contains('生成二维码'));
     expect(body, contains('genQr'));
     expect(body, contains('/qr?text='));
+    expect(body, contains('添加一行'));
+    expect(body, contains('qrstyle'));
+    expect(body, contains('downloadQr'));
+
+    await svc.stop();
+    await dummy.close(force: true);
+  });
+
+  test('GET /qr 支持 style=rounded 返回圆角矩形', () async {
+    final dummy = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final svc = ClipboardService();
+    await svc.start(dummy.port);
+    final cbPort = svc.port!;
+
+    final hc = HttpClient();
+    final req = await hc.getUrl(Uri.parse('http://127.0.0.1:$cbPort/qr?text=hi&style=rounded'));
+    final res = await req.close();
+    expect(res.statusCode, HttpStatus.ok);
+    final body = await res.transform(utf8.decoder).join();
+    expect(body, contains('rx="'));
+    expect(body, contains('<rect'));
+    expect(body, isNot(contains('<circle')));
+
+    await svc.stop();
+    await dummy.close(force: true);
+  });
+
+  test('GET /qr 支持 style=dots 返回圆点', () async {
+    final dummy = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final svc = ClipboardService();
+    await svc.start(dummy.port);
+    final cbPort = svc.port!;
+
+    final hc = HttpClient();
+    final req = await hc.getUrl(Uri.parse('http://127.0.0.1:$cbPort/qr?text=hi&style=dots'));
+    final res = await req.close();
+    expect(res.statusCode, HttpStatus.ok);
+    final body = await res.transform(utf8.decoder).join();
+    expect(body, contains('<circle'));
+    // 圆点样式下不应有模块级 <rect>（仅背景色 rect）
+    expect(body, isNot(contains('<rect x=')));
+
+    await svc.stop();
+    await dummy.close(force: true);
+  });
+
+  test('GET /qr 支持 fg/bg 颜色参数', () async {
+    final dummy = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final svc = ClipboardService();
+    await svc.start(dummy.port);
+    final cbPort = svc.port!;
+
+    final hc = HttpClient();
+    final req = await hc.getUrl(Uri.parse('http://127.0.0.1:$cbPort/qr?text=hi&fg=ff0000&bg=00ff00'));
+    final res = await req.close();
+    expect(res.statusCode, HttpStatus.ok);
+    final body = await res.transform(utf8.decoder).join();
+    expect(body, contains('fill="#ff0000"'));
+    expect(body, contains('fill="#00ff00"'));
+
+    await svc.stop();
+    await dummy.close(force: true);
+  });
+
+  test('GET /qr 未知 style 回落方形', () async {
+    final dummy = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final svc = ClipboardService();
+    await svc.start(dummy.port);
+    final cbPort = svc.port!;
+
+    final hc = HttpClient();
+    final req = await hc.getUrl(Uri.parse('http://127.0.0.1:$cbPort/qr?text=hi&style=invalid'));
+    final res = await req.close();
+    expect(res.statusCode, HttpStatus.ok);
+    final body = await res.transform(utf8.decoder).join();
+    expect(body, contains('<path d="'));
+
+    await svc.stop();
+    await dummy.close(force: true);
+  });
+
+  test('GET /qr 非法颜色回落默认', () async {
+    final dummy = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final svc = ClipboardService();
+    await svc.start(dummy.port);
+    final cbPort = svc.port!;
+
+    final hc = HttpClient();
+    final req = await hc.getUrl(Uri.parse('http://127.0.0.1:$cbPort/qr?text=hi&fg=zzz&bg=12'));
+    final res = await req.close();
+    expect(res.statusCode, HttpStatus.ok);
+    final body = await res.transform(utf8.decoder).join();
+    expect(body, contains('fill="#000000"'));
+    expect(body, contains('fill="#ffffff"'));
 
     await svc.stop();
     await dummy.close(force: true);
