@@ -149,9 +149,12 @@ class ClipboardService {
 
     ws.listen(
       (data) {
-        final msg = _parseClientMsg(data as String);
-        if (msg != null) {
-          setText(msg, source: ws);
+        // 二进制帧时 data 是 List<int>，仅处理文本帧，避免强转抛 TypeError
+        if (data is String) {
+          final msg = _parseClientMsg(data);
+          if (msg != null) {
+            setText(msg, source: ws);
+          }
         }
       },
       onDone: () {
@@ -181,6 +184,11 @@ class ClipboardService {
 
   /// GET /api/clipboard → JSON 含当前文本与时间戳；
   /// POST /api/clipboard → body 为纯文本，设置并广播给所有已连接页面。
+  ///
+  /// POST body 上限 [maxClipboardBodyBytes]，超过返回 413（防恶意大 body
+  /// 撑爆内存；剪贴板场景正常内容远小于该值）。
+  static const int maxClipboardBodyBytes = 1024 * 1024;
+
   void _serveClipboardApi(HttpRequest req) {
     if (req.method == 'GET') {
       req.response
@@ -189,7 +197,26 @@ class ClipboardService {
         ..write(jsonEncode({'text': _text ?? '', 'ts': _updatedAt}))
         ..close();
     } else if (req.method == 'POST') {
+      // Content-Length 已知且超限时直接拒绝，不等 body 读完。
+      final contentLength = req.contentLength;
+      if (contentLength > maxClipboardBodyBytes) {
+        req.response
+          ..statusCode = HttpStatus.requestEntityTooLarge
+          ..headers.contentType = ContentType.text
+          ..write('body too large')
+          ..close();
+        return;
+      }
       req.cast<List<int>>().transform(utf8.decoder).join().then((body) {
+        // 流式读取时按解码后长度再拦一次（Content-Length 可能缺失）。
+        if (body.length > maxClipboardBodyBytes) {
+          req.response
+            ..statusCode = HttpStatus.requestEntityTooLarge
+            ..headers.contentType = ContentType.text
+            ..write('body too large')
+            ..close();
+          return;
+        }
         if (body.isEmpty) {
           req.response
             ..statusCode = HttpStatus.badRequest
@@ -198,12 +225,24 @@ class ClipboardService {
             ..close();
           return;
         }
-        setText(body);
-        req.response
-          ..statusCode = HttpStatus.ok
-          ..headers.contentType = ContentType.text
-          ..write('ok')
-          ..close();
+        try {
+          setText(body);
+          req.response
+            ..statusCode = HttpStatus.ok
+            ..headers.contentType = ContentType.text
+            ..write('ok')
+            ..close();
+        } catch (e) {
+          // 广播给 WebSocket 客户端时若连接异常，确保响应仍被关闭，不泄漏。
+          debugPrint('ClipboardService: setText failed: $e');
+          try {
+            req.response
+              ..statusCode = HttpStatus.internalServerError
+              ..headers.contentType = ContentType.text
+              ..write('internal error')
+              ..close();
+          } catch (_) {}
+        }
       });
     } else {
       req.response
@@ -213,6 +252,9 @@ class ClipboardService {
   }
 
   // ── 二维码生成（纯 Dart，零第三方 JS/C 依赖） ──
+
+  /// 颜色参数校验：6 位 hex（可带/不带 #）。
+  static final RegExp _hexColorRe = RegExp(r'^[0-9a-fA-F]{6}$');
 
   /// GET /qr?text=... → image/svg+xml（离线路由，供页面 <img> 直接引用）。
   void _serveQr(HttpRequest req) {
@@ -233,17 +275,35 @@ class ClipboardService {
       if (raw == null) return fallback;
       var v = raw.trim();
       if (v.startsWith('#')) v = v.substring(1);
-      return RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(v) ? v : fallback;
+      return _hexColorRe.hasMatch(v) ? v : fallback;
     }
 
     final fg = normColor(qp['fg'], '000000');
     final bg = normColor(qp['bg'], 'ffffff');
-    final svg = _qrSvg(text, style: style, fg: fg, bg: bg);
-    req.response
-      ..statusCode = HttpStatus.ok
-      ..headers.contentType = ContentType('image', 'svg+xml', charset: 'utf-8')
-      ..write(svg)
-      ..close();
+    try {
+      final svg = _qrSvg(text, style: style, fg: fg, bg: bg);
+      req.response
+        ..statusCode = HttpStatus.ok
+        ..headers.contentType = ContentType('image', 'svg+xml', charset: 'utf-8')
+        ..write(svg)
+        ..close();
+    } on InputTooLongException catch (e) {
+      // 文本超出二维码容量（M 纠错约 2953 字节）时 qr 包抛此异常，
+      // 返回 400 而非 500，前端 <img> 不会碎裂。
+      debugPrint('ClipboardService: QR input too long: $e');
+      req.response
+        ..statusCode = HttpStatus.badRequest
+        ..headers.contentType = ContentType.text
+        ..write('text too long for a QR code');
+      req.response.close();
+    } catch (e) {
+      debugPrint('ClipboardService: QR generation failed: $e');
+      req.response
+        ..statusCode = HttpStatus.internalServerError
+        ..headers.contentType = ContentType.text
+        ..write('QR generation failed');
+      req.response.close();
+    }
   }
 
   /// 用 `qr` 包生成二维码矩阵（`QrCode.fromData` → `QrImage`），遍历

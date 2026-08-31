@@ -367,4 +367,83 @@ void main() {
     await svc.stop();
     await dummy.close(force: true);
   });
+
+  test('GET /qr 超长文本返回 400 不崩溃（防 InputTooLongException）', () async {
+    final dummy = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final svc = ClipboardService();
+    await svc.start(dummy.port);
+    final cbPort = svc.port!;
+
+    // M 纠错容量约 2953 字节，远超则抛 InputTooLongException，应回落 400。
+    final longText = 'x' * 10000;
+    final hc = HttpClient();
+    final get = await hc.getUrl(
+      Uri.parse('http://127.0.0.1:$cbPort/qr?text=${Uri.encodeQueryComponent(longText)}'),
+    );
+    final res = await get.close();
+    expect(res.statusCode, HttpStatus.badRequest);
+    final body = await res.transform(utf8.decoder).join();
+    expect(body, contains('too long'));
+
+    // 服务仍存活，正常文本可继续生成。
+    final ok = await hc.getUrl(
+      Uri.parse('http://127.0.0.1:$cbPort/qr?text=hello'),
+    );
+    final okRes = await ok.close();
+    expect(okRes.statusCode, HttpStatus.ok);
+
+    hc.close(force: true);
+    await svc.stop();
+    await dummy.close(force: true);
+  });
+
+  test('POST /api/clipboard 超大 body 返回 413', () async {
+    final dummy = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final svc = ClipboardService();
+    await svc.start(dummy.port);
+    final cbPort = svc.port!;
+
+    // 显式 Content-Length 超限 → 直接 413（不走流式读取）。
+    final big = List.filled(ClipboardService.maxClipboardBodyBytes + 1, 0x61); // 'a'
+    final hc = HttpClient();
+    final post = await hc.postUrl(Uri.parse('http://127.0.0.1:$cbPort/api/clipboard'));
+    post.headers.contentType = ContentType.text;
+    post.add(big);
+    final res = await post.close();
+    expect(res.statusCode, HttpStatus.requestEntityTooLarge);
+    await res.drain<void>();
+
+    hc.close(force: true);
+    await svc.stop();
+    await dummy.close(force: true);
+  });
+
+  test('WebSocket 收到二进制帧不崩溃（仅处理文本帧）', () async {
+    final dummy = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final svc = ClipboardService();
+    await svc.start(dummy.port);
+    final cbPort = svc.port!;
+
+    // 发送者：先发二进制帧，再发文本帧。
+    final sender = await WebSocket.connect('ws://127.0.0.1:$cbPort/');
+    // 接收者：广播排除发送者自身，须另开连接观察。
+    final receiver = await WebSocket.connect('ws://127.0.0.1:$cbPort/');
+    final received = Completer<String>();
+    receiver.listen((data) {
+      if (data is String && !received.isCompleted) received.complete(data);
+    });
+
+    // 二进制帧应被忽略（服务端仅处理文本帧），不崩溃。
+    sender.add(utf8.encode('ignored-binary'));
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    // 文本帧仍正常广播。
+    sender.add(jsonEncode({'type': 'set', 'text': 'after-binary'}));
+    final msg = jsonDecode(await received.future.timeout(const Duration(seconds: 2)));
+    expect(msg['text'], 'after-binary');
+
+    await sender.close();
+    await receiver.close();
+    await svc.stop();
+    await dummy.close(force: true);
+  });
 }

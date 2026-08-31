@@ -131,6 +131,10 @@ A Dufs-based, lightweight cross-platform file distribution GUI optimized for **a
 
 **Fix:** Settings → Apps → FileInfra → Permissions → Allow "All files access"
 
+### Android — Notification Clipboard Buttons
+
+The notification's "Send clipboard" button reads the system clipboard, which is **only readable by the foreground app on Android 10+** (background reads silently return empty). If the Tools page doesn't update after tapping "Send", bring FileInfra to the foreground and retry. "Pull clipboard" (writing to the system clipboard) is not affected (Android 10+ shows a clipboard-access toast).
+
 ### Port in Use
 
 **Symptom:** Start fails, "Port XXX already in use"

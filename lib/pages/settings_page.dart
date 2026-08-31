@@ -521,6 +521,14 @@ class _SettingsPageState extends State<SettingsPage> {
               onChanged: (v) async {
                 setState(() => widget.config.notifClipboard = v);
                 await widget.config.save();
+                // 服务运行中即时重建通知栏按钮（Android 侧持久化并刷新）；
+                // 非 Android / 未运行时 Kotlin 只存 prefs，下次启动生效。
+                try {
+                  await _ch.invokeMethod(
+                    'updateNotificationClipboard',
+                    {'enabled': v},
+                  );
+                } catch (_) {}
               },
             ),
           ],

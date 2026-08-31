@@ -22,6 +22,12 @@ class DufsForegroundService : Service() {
         private const val NOTIFICATION_ID = 1001
         private const val PREFS = "fileinfra_native"
 
+        /// 通知栏多语标签（三语 × 文件/剪切板/停止/发送/拉取）
+        private data class NotifLabels(
+            val file: String, val clip: String, val stop: String,
+            val send: String, val pull: String
+        )
+
         const val ACTION_START = "cc.merr.fileinfra.action.START"
         const val ACTION_STOP = "cc.merr.fileinfra.action.STOP"
         const val ACTION_SEND_CLIPBOARD = "cc.merr.fileinfra.action.SEND_CLIPBOARD"
@@ -109,10 +115,35 @@ class DufsForegroundService : Service() {
             } catch (_: Exception) {}
             val lang = context.getSharedPreferences(PREFS, MODE_PRIVATE)
                 .getString("lang", "en") ?: "en"
+            val notifClipboard = context.getSharedPreferences(PREFS, MODE_PRIVATE)
+                .getBoolean("notifClipboard", true)
             val manager = context.getSystemService(NotificationManager::class.java)
             manager.notify(
                 NOTIFICATION_ID,
-                buildNotification(context, currentPort, address, clipboardAddress, currentPath, lang)
+                buildNotification(
+                    context, currentPort, address, clipboardAddress, currentPath, lang, notifClipboard
+                )
+            )
+        }
+
+        /// 设置页切换「通知栏剪贴板按钮」开关后由 Dart 侧经 MethodChannel 调用：
+        /// 持久化新值并即时重建通知栏（服务未运行时只存 prefs，下次启动生效）。
+        fun updateClipboardButtons(context: Context, enabled: Boolean) {
+            try {
+                context.getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+                    .putBoolean("notifClipboard", enabled)
+                    .apply()
+            } catch (_: Exception) {}
+            if (!isRunning) return
+            val lang = context.getSharedPreferences(PREFS, MODE_PRIVATE)
+                .getString("lang", "en") ?: "en"
+            val manager = context.getSystemService(NotificationManager::class.java)
+            manager.notify(
+                NOTIFICATION_ID,
+                buildNotification(
+                    context, currentPort, currentAddress, currentClipboardAddress,
+                    currentPath, lang, enabled
+                )
             )
         }
 
@@ -122,7 +153,7 @@ class DufsForegroundService : Service() {
         /// 展开显示两行（折叠只显示第一行主地址）。
         fun buildNotification(
             context: Context, port: Int, address: String, clipboardAddress: String,
-            path: String, lang: String
+            path: String, lang: String, notifClipboard: Boolean = true
         ): Notification {
             val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
             val pendingIntent = PendingIntent.getActivity(
@@ -136,8 +167,7 @@ class DufsForegroundService : Service() {
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
 
-            val showClipboardButtons = context.getSharedPreferences(PREFS, MODE_PRIVATE)
-                .getBoolean("notifClipboard", true)
+            val showClipboardButtons = notifClipboard
 
             val clipboardPort = clipboardAddress.substringAfterLast(":").toIntOrNull()
 
@@ -160,11 +190,14 @@ class DufsForegroundService : Service() {
                 }
             } else address
 
-            val (fileLabel, clipLabel, stopLabel) = when (lang) {
-                "zh" -> Triple("文件分享", "剪切板", "停止分享")
-                "zhTW" -> Triple("檔案分享", "剪貼板", "停止分享")
-                else -> Triple("File Sharing", "Clipboard", "Stop")
+            val labels = when (lang) {
+                "zh" -> NotifLabels("文件分享", "剪切板", "停止分享", "发送", "拉取")
+                "zhTW" -> NotifLabels("檔案分享", "剪貼板", "停止分享", "發送", "拉取")
+                else -> NotifLabels("File Sharing", "Clipboard", "Stop", "Send", "Pull")
             }
+            val fileLabel = labels.file
+            val clipLabel = labels.clip
+            val stopLabel = labels.stop
 
             val firstLine = "$fileLabel: $display"
 
@@ -199,10 +232,10 @@ class DufsForegroundService : Service() {
                     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                 )
                 builder.addAction(
-                    Notification.Action.Builder(null, "发送", sendPendingIntent).build()
+                    Notification.Action.Builder(null, labels.send, sendPendingIntent).build()
                 )
                 builder.addAction(
-                    Notification.Action.Builder(null, "拉取", pullPendingIntent).build()
+                    Notification.Action.Builder(null, labels.pull, pullPendingIntent).build()
                 )
             }
 
@@ -279,7 +312,7 @@ class DufsForegroundService : Service() {
             killDufs()
             persistLaunch(port, path, args, lang, address, clipboardAddress, notifClipboard)
 
-            val notification = buildNotification(this, port, address, clipboardAddress, path, lang)
+            val notification = buildNotification(this, port, address, clipboardAddress, path, lang, notifClipboard)
             // Android 14+ (API 34) requires the 3-arg startForeground with an
             // explicit service type. We use SPECIAL_USE (declared in the
             // manifest with PROPERTY_SPECIAL_USE_FGS_SUBTYPE): dataSync would

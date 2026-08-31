@@ -133,6 +133,11 @@ class MainActivity : FlutterActivity() {
                     DufsForegroundService.updateAddress(this, address, clipboardAddress)
                     result.success(true)
                 }
+                "updateNotificationClipboard" -> {
+                    val enabled = call.argument<Boolean>("enabled") ?: true
+                    DufsForegroundService.updateClipboardButtons(this, enabled)
+                    result.success(true)
+                }
                 "stopForegroundService" -> {
                     val intent = Intent(this, DufsForegroundService::class.java)
                     stopService(intent)
