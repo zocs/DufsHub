@@ -177,7 +177,15 @@ EOF
     RUST_TARGET="x86_64-unknown-linux-gnu"
 
     ensure_rust_target
-    cargo build --lib --release --target "$RUST_TARGET"
+    # 老 glibc 兼容构建（compat）禁用默认 tls feature：tls 拉 rustls →
+    # aws-lc-sys（C++ 编译），它的构建 flag -Wno-deprecated-literal-operator
+    # 是 GCC 专属，旧 clang 不认。FileInfra 从不传 --tls-cert/--tls-key，
+    # 纯 HTTP 用不到 tls，去掉后还能省下几百 KB。iOS 分支早已这么做。
+    if [ "${DUFS_NO_DEFAULT_FEATURES:-0}" = "1" ]; then
+      cargo build --lib --release --no-default-features --target "$RUST_TARGET"
+    else
+      cargo build --lib --release --target "$RUST_TARGET"
+    fi
 
     cp "target/${RUST_TARGET}/release/libdufs.so" "${OUTPUT_DIR}/libdufs-linux-x86_64.so"
     echo "Built: ${OUTPUT_DIR}/libdufs-linux-x86_64.so ($(du -h "${OUTPUT_DIR}/libdufs-linux-x86_64.so" | cut -f1))"

@@ -312,6 +312,7 @@ jobs:
             -v /tmp/compat-out:/out \
             -e FILEINFRA_OUTPUT_DIR=/out \
             -e FILEINFRA_ARCHIVE_SUFFIX=-compat \
+            -e DUFS_NO_DEFAULT_FEATURES=1 \
             fileinfra-compat:latest \
             bash -c "cd /src && bash scripts/build_linux.sh x86_64"
       - uses: actions/upload-artifact@v7
