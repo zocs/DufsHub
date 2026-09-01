@@ -283,6 +283,10 @@ class DufsService extends ChangeNotifier {
 
   Future<void> _startServerLocked(ServerConfig config) async {
     _lang = config.language;
+    // 重置上轮残留的可读性警告：它只应在“服务真的启动成功”时展示，
+    // 否则启动中任一后续失败（权限/端口/服务拉起）会让 UI 同时显示
+    // 错误 + “已启动但目录不可读”的矛盾警告。
+    _androidReadableWarning = null;
     await _prepareLogFile();
     if (config.path.isEmpty) {
       _error = _l10n.t('srv.noDir');
@@ -321,12 +325,15 @@ class DufsService extends ChangeNotifier {
     // 断用户会陷入“给了权限也启动不了”。Android 上改为：保留错误文案但**不
     // 阻断**，让 dufs 尝试绑定，能读到什么是什么（传输记录里 403 会留痕）。
     final readableError = await _probeReadable(config);
+    // Android 上的目录可读性警告先放本地变量，服务真正启动成功后
+    // 才落字段展示（见下），避免启动中途失败时残留“已启动”矛盾警告。
+    String? androidReadableWarning;
     if (readableError != null) {
       if (Platform.isAndroid) {
         // 非阻断：先缓存该警告，启动成功后由_serveUrls区域继续展示，
         // 用户可据此判断是否需要换目录。
         _log('readability warning (non-blocking on Android): $readableError');
-        _androidReadableWarning = readableError;
+        androidReadableWarning = readableError;
       } else {
         _error = readableError;
         notifyListeners();
@@ -416,6 +423,10 @@ class DufsService extends ChangeNotifier {
       }
 
       _isRunning = true;
+      // 服务确认跑起来了才把可读性警告挂上 UI。
+      if (androidReadableWarning != null) {
+        _androidReadableWarning = androidReadableWarning;
+      }
       _localIp = await _getWifiIP();
       final allNet = await _getAllAddresses();
       _allAddresses = allNet['addresses'] ?? [];
