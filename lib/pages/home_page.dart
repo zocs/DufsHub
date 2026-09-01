@@ -1265,6 +1265,37 @@ class _HomePageState extends State<HomePage>
     );
   }
 
+  /// 非阻断的可读性警告（Android 10/EMUI 分区存储下目录可能不可读，
+  /// 但服务已启动）。用警告色区分于上方 errorContainer。
+  Widget _buildReadableWarning(DufsService service) {
+    final msg = service.androidReadableWarning;
+    if (msg == null) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.tertiaryContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.warning_amber_rounded,
+            color: Theme.of(context).colorScheme.onTertiaryContainer,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              msg,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onTertiaryContainer,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ==================== Advanced Options ====================
 
   Widget _buildAdvancedOptions() {
@@ -1527,6 +1558,12 @@ class _HomePageState extends State<HomePage>
                   child: _buildError(service),
                 ),
                 if (service.error != null) const SizedBox(height: 4),
+                // Android 可读性警告（非阻断）：服务已启动但目录可能不可读
+                if (service.androidReadableWarning != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildReadableWarning(service),
+                  ),
                 // Start/Stop
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),

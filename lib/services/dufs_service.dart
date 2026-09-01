@@ -38,6 +38,9 @@ class DufsService extends ChangeNotifier {
   String? _serverUrl;
   String? _localIp;
   String? _error;
+  /// 启动时由 _probeReadable 设置的 Android 目录可读性警告（非阻断），
+  /// 在服务启动后由 UI 展示，告知用户 dufs 可能无法读取该目录下的文件。
+  String? _androidReadableWarning;
   int _totalRequests = 0;
   String? _lastActivity;
   DateTime? _lastActivityAt;
@@ -75,6 +78,8 @@ class DufsService extends ChangeNotifier {
   String? get clipboardError => _clipboard.lastError;
   String? get localIp => _localIp;
   String? get error => _error;
+  /// 服务启动时探测目录不可读的警告（Android 非阻断场景）。
+  String? get androidReadableWarning => _androidReadableWarning;
   String? get portInfo => _portInfo;
   /// Port the running server is actually bound to. Differs from the
   /// user-configured `ServerConfig.port` when `_resolvePort` had to bump
@@ -307,12 +312,26 @@ class DufsService extends ChangeNotifier {
     // exists() 通过不代表 dufs 读得了：能 stat 不能 opendir 的目录（Android 10
     // 分区存储、内存卡、Android/data 下）会让 dufs 对每个请求回 403 Forbidden
     // （server.rs handle_list_dir ← fs::read_dir 报错），而 UI 照样把二维码和
-    // URL 递出去。启动前先按 dufs 的读法探一次，失败就直接拒绝启动。
+    // URL 递出去。启动前先按 dufs 的读法探一次。
+    //
+    // 平台差异：桌面（Linux/macOS/Windows）探测失败 = 权限位/网络盘真的读不了，
+    // 直接拒绝启动（否则启动一个必然 403 的服务）。Android 10/EMUI 在
+    // targetSdk≥30 时 scoped storage 生效，即使 READ_EXTERNAL_STORAGE 已授予，
+    // 某些目录（根目录 / 内存卡 / Android/data）直接路径仍不可读；此时若硬阻
+    // 断用户会陷入“给了权限也启动不了”。Android 上改为：保留错误文案但**不
+    // 阻断**，让 dufs 尝试绑定，能读到什么是什么（传输记录里 403 会留痕）。
     final readableError = await _probeReadable(config);
     if (readableError != null) {
-      _error = readableError;
-      notifyListeners();
-      return;
+      if (Platform.isAndroid) {
+        // 非阻断：先缓存该警告，启动成功后由_serveUrls区域继续展示，
+        // 用户可据此判断是否需要换目录。
+        _log('readability warning (non-blocking on Android): $readableError');
+        _androidReadableWarning = readableError;
+      } else {
+        _error = readableError;
+        notifyListeners();
+        return;
+      }
     }
     // Validate permission consistency
     final permError = config.validatePermissions(config.language);
@@ -830,6 +849,7 @@ class DufsService extends ChangeNotifier {
     _logFilePath = null;
     _logFilePosition = 0;
     _logFileRemainder = '';
+    _androidReadableWarning = null;
     await _clipboard.stop();
     notifyListeners();
   }
