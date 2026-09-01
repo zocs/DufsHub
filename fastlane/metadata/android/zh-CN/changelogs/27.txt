@@ -1,0 +1,1 @@
+版本号同步、NSIS 安装包引号修复、FFI 重入保护、Android 并发修复、F-Droid 版本更新

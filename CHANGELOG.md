@@ -5,6 +5,16 @@
 
 ## [Unreleased]
 
+**中文：**
+- 🐛 Ubuntu 18.04 兼容版首屏卡死：无 keyring/secret-service 环境首次启动时 `save()` 不再被 secure storage 异常阻断（向导能正常走完）；无 XDG portal 时选择目录/文件给出明确提示。
+- 🐛 Android 10/EMUI 分区存储下无法启动：目录可读性探测改为**非阻断**——服务照常启动并展示警告（可改选内部存储公共目录）；仅在服务真正启动后才展示警告。
+- 🔧 代码审查修复批（v0.5.7 回看）：通知栏按钮三语、QR 超长文本 400、剪贴板 POST body 1MB 上限、WS 二进制帧守卫、通知栏剪贴板开关即时生效、README 补充 Android 10 剪贴板说明。
+
+**English:**
+- 🐛 Ubuntu 18.04 compat first-run stuck: `save()` no longer blocked by secure-storage failure on keyring-less systems (wizard completes); picking a dir/file without an XDG portal now shows a clear message.
+- 🐛 Android 10/EMUI could not start under scoped storage: the directory readability probe is now **non-blocking** on Android — the server starts with a warning banner (pick an internal public dir like Documents); the warning only appears after the server is confirmed running.
+- 🔧 Code-review fix batch (v0.5.7 follow-up): trilingual notification buttons, QR overflow → 400, 1MB cap on clipboard POST body, WS binary-frame guard, notification clipboard toggle takes effect immediately, README notes on Android 10 clipboard access.
+
 ## [v0.5.7](https://github.com/zocs/fileinfra/releases/tag/v0.5.7) (2026-08-31)
 
 **中文：**

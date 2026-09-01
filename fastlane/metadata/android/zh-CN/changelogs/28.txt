@@ -1,0 +1,1 @@
+Android 正式签名（本地 + CI 统一），升级无需卸载重装；F-Droid 元数据与 Fastlane 支持
