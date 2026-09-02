@@ -3,9 +3,19 @@
 > 所有版本均可在 [GitHub Releases](https://github.com/zocs/fileinfra/releases) 下载。
 > All versions available at [GitHub Releases](https://github.com/zocs/fileinfra/releases).
 
-## [v0.5.8](https://github.com/zocs/fileinfra/releases/tag/v0.5.8) (2026-09-01)
+## [Unreleased]
 
 **中文：**
+- 🔧 服务验证优化：启动后后台异步校验服务可用性（端口监听 + HTTP 响应），失败自动回滚；启动按钮即时翻转，不再等待验证。
+- 🐛 修复停止服务后快速重启时服务假运行：Kotlin dedup 现在验证子进程存活，避免孤儿进程被 pkill 后遗留 `isRunning=true` 导致跳过启动。
+- ⚡ 桌面端停止服务延迟从 ~1s 降到 ~100ms。
+
+**English:**
+- 🔧 Service health verification: async TCP + HTTP probes after startup, automatically roll back on failure; the Start/Stop button flips instantly without waiting for validation.
+- 🐛 Fixed fake-running state after stop+quick-restart: Kotlin dedup now checks child-process aliveness, preventing a stale `isRunning=true` from skipping the restart when the orphan was already killed by pkill.
+- ⚡ Desktop stop latency reduced from ~1s to ~100ms.
+
+
 - 🐛 Ubuntu 18.04 兼容版首屏卡死：无 keyring/secret-service 环境首次启动时 `save()` 不再被 secure storage 异常阻断（向导能正常走完）；无 XDG portal 时选择目录/文件给出明确提示。
 - 🐛 Android 10/EMUI 分区存储下无法启动：目录可读性探测改为**非阻断**——服务照常启动并展示警告（可改选内部存储公共目录）；仅在服务真正启动后才展示警告。
 - 🔧 代码审查修复批（v0.5.7 回看）：通知栏按钮三语、QR 超长文本 400、剪贴板 POST body 1MB 上限、WS 二进制帧守卫、通知栏剪贴板开关即时生效、README 补充 Android 10 剪贴板说明。

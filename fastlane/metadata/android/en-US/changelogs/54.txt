@@ -1,0 +1,3 @@
+More reliable startup — issues are detected and recovered automatically
+Fixed occasional "can't access" after a quick stop-and-restart
+Stop now responds faster
