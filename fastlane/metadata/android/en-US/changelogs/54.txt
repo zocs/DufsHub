@@ -1,3 +1,3 @@
-More reliable startup — issues are detected and recovered automatically
-Fixed occasional "can't access" after a quick stop-and-restart
-Stop now responds faster
+Server startup is now verified automatically (port listening + HTTP response); on failure the server rolls back with a clear message — no more "running but unreachable"
+Fixed a rare fake-running state after a quick stop-and-restart: the UI showed the server as running while nothing was actually listening
+Desktop stop latency reduced from ~1s to ~100ms
