@@ -423,6 +423,11 @@ class DufsService extends ChangeNotifier {
       }
 
       _isRunning = true;
+      final gen = ++_startGeneration;
+      // 立即通知 UI 翻转（「启动服务」→「停止服务」），让用户感知服务已启动。
+      // TCP + HTTP 长验证稍后在 _startServerLocked 收尾后由后台
+      // [_verifyServerAsync] 完成，失败再回滚（见下方 try 块末尾）。
+      notifyListeners();
       // 服务确认跑起来了才把可读性警告挂上 UI。
       if (androidReadableWarning != null) {
         _androidReadableWarning = androidReadableWarning;
@@ -473,6 +478,12 @@ class DufsService extends ChangeNotifier {
         }).catchError((_) {});
       }
       notifyListeners();
+      // _startServerLocked 已收尾（地址/剪贴板/日志轮询就绪）后才启动后台
+      // 验证，避免与回滚的 stopServer() 并发竞态。Android 由 Kotlin 侧
+      // waitForServerReady 完成同等验证，无需重复。
+      if (!Platform.isAndroid) {
+        unawaited(_verifyServerAsync(gen, actualPort));
+      }
     } catch (e) {
       // FFI 已起来的情况下不能只清状态：stopServer 会因 !_isRunning 拒停，
       // 服务器会占着端口滞留到进程退出。
@@ -545,6 +556,11 @@ class DufsService extends ChangeNotifier {
   }
 
   // ==================== Start dufs via FFI (desktop) ====================
+  /// 启动代数，用于区分先后台验证的归属。每次 start 递增，后台验证
+  /// 持有启动时的代数，回滚前检查是否仍为当前代数——防止验证完成时
+  /// 用户已停止又重启了服务，误杀/误报新实例。
+  int _startGeneration = 0;
+
   Future<void> _startDufsFfi(ServerConfig config, int port) async {
     if (!_dufsFfi.isLoaded) {
       final libPath = await resolveDufsLibPath();
@@ -560,22 +576,11 @@ class DufsService extends ChangeNotifier {
       throw Exception('dufs FFI start returned $ret');
     }
     _log('dufs FFI start returned 0 (success)');
-    // 验证端口真的绑上了：_isPortAvailable 的探测与本启动之间存在 TOCTOU，
-    // 端口可能被抢；dufs_start 返回 0 只代表参数解析/任务派发成功。
-    if (!await _waitPortReady(port) || !_dufsFfi.isRunning()) {
-      try {
-        _dufsFfi.stop();
-      } catch (_) {}
+    // 立即检查进程是否活着（启动失败/秒死会被 _startDufsFfi 拦截），
+    // 长轮询验证（TCP + HTTP）交给后台 [_verifyServerAsync] 在
+    // UI 翻转后执行，不阻塞「停止服务」按钮展示。
+    if (!_dufsFfi.isRunning()) {
       throw Exception(_t('srv.notListening', {'port': '$port'}));
-    }
-    // 应用层验证：TCP 通不代表 dufs 真的在服务（孤儿进程占端口等）。
-    // 单次 GET /，任何 HTTP 响应码（含 401/403）都证明服务活着；
-    // 失败重试一次，两次都失败才认定启动无效。
-    if (!await _waitHttpReady(port)) {
-      try {
-        _dufsFfi.stop();
-      } catch (_) {}
-      throw Exception(_t('srv.notResponding', {'port': '$port'}));
     }
   }
 
@@ -600,6 +605,28 @@ class DufsService extends ChangeNotifier {
       }
     }
     return false;
+  }
+
+  /// 后台服务验证（UI 翻转后 fire-and-forget 执行）。
+  /// 先等端口可连，再探测 HTTP 响应。任一失败且服务仍属于本次启动
+  /// （代数未变）则回滚：停止服务并展示错误，避免 UI 显示在线但
+  /// 实际不可访问（孤儿进程占端口等）。
+  Future<void> _verifyServerAsync(int gen, int port) async {
+    var tcpOk = false;
+    var httpOk = false;
+    try {
+      tcpOk = await _waitPortReady(port);
+      if (tcpOk) httpOk = await _waitHttpReady(port);
+    } catch (_) {}
+    if (tcpOk && httpOk) return;
+    if (gen != _startGeneration || !_isRunning) return;
+    _log('Server verify failed (tcp=$tcpOk http=$httpOk), rolling back');
+    await stopServer();
+    _error = _t(
+      tcpOk ? 'srv.notResponding' : 'srv.notListening',
+      {'port': '$port'},
+    );
+    notifyListeners();
   }
 
   /// 轮询本机端口直到可连接。返回 false 即超时（默认 3s）。
@@ -652,14 +679,8 @@ class DufsService extends ChangeNotifier {
         _t('srv.exitedDuringStart', {'code': '$_processExitCode'}),
       );
     }
-    // 应用层验证（同 FFI 路径）：等端口可连 + HTTP 响应，避免
-    // 进程活着但没绑上端口（参数错/端口被抢）时 UI 仍显示在线。
-    if (!await _waitPortReady(port)) {
-      throw Exception(_t('srv.notListening', {'port': '$port'}));
-    }
-    if (!await _waitHttpReady(port)) {
-      throw Exception(_t('srv.notResponding', {'port': '$port'}));
-    }
+    // 长验证（TCP + HTTP）不在启动路径阻塞——UI 已翻转，由后台
+    // [_verifyServerAsync] 完成，失败再回滚。这里只兜底秒死。
   }
 
   void _onProcessDied(Process proc, int code) {
