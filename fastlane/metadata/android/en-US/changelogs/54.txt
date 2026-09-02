@@ -1,3 +1,3 @@
-Server startup is now verified automatically (port listening + HTTP response); on failure the server rolls back with a clear message — no more "running but unreachable"
-Fixed a rare fake-running state after a quick stop-and-restart: the UI showed the server as running while nothing was actually listening
+Service verification: startup now asynchronously checks availability (port listening + HTTP response) and rolls back on failure; the Start/Stop button flips instantly without waiting for validation
+Fixed a fake-running state after a quick stop-and-restart: startup now verifies the child process is alive and cleans up leftovers, so the UI no longer shows running while nothing is reachable
 Desktop stop latency reduced from ~1s to ~100ms
