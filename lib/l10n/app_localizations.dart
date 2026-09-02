@@ -91,6 +91,7 @@ class AppLocalizations {
       'srv.storagePermNeeded': '需要开启「所有文件访问权限」才能正常列出文件。请在系统设置中开启后重试。',
       'srv.startFailed': '服务启动失败',
       'srv.notListening': '服务未在端口 {port} 上监听，可能端口被抢占',
+      'srv.notResponding': '服务已启动但未响应 HTTP 请求，可能端口被其他程序占用',
       'srv.dufsMissing': 'dufs 服务组件缺失，请重新安装应用。路径: {path}',
       'srv.exitedDuringStart': 'dufs 进程启动后立即退出（代码 {code}）',
       'srv.exitedUnexpectedly': 'dufs 进程意外退出（代码 {code}）',
@@ -220,6 +221,7 @@ class AppLocalizations {
           'All-Files Access is required to list files. Enable it in system settings and retry.',
       'srv.startFailed': 'Failed to start server',
       'srv.notListening': 'Server did not start listening on port {port}',
+      'srv.notResponding': 'Server started but did not respond to HTTP requests — port may be held by another program',
       'srv.dufsMissing':
           'dufs server component missing, please reinstall. Path: {path}',
       'srv.exitedDuringStart': 'dufs exited immediately after start (code {code})',
@@ -349,6 +351,7 @@ class AppLocalizations {
       'srv.storagePermNeeded': '需要開啟「所有檔案存取權限」才能正常列出檔案。請在系統設定中開啟後重試。',
       'srv.startFailed': '服務啟動失敗',
       'srv.notListening': '服務未在連接埠 {port} 上監聽',
+      'srv.notResponding': '服務已啟動但未回應 HTTP 請求，連接埠可能被其他程式占用',
       'srv.dufsMissing': 'dufs 服務元件缺失，請重新安裝應用。路徑: {path}',
       'srv.exitedDuringStart': 'dufs 行程啟動後立即退出（代碼 {code}）',
       'srv.exitedUnexpectedly': 'dufs 行程意外退出（代碼 {code}）',

@@ -568,6 +568,38 @@ class DufsService extends ChangeNotifier {
       } catch (_) {}
       throw Exception(_t('srv.notListening', {'port': '$port'}));
     }
+    // 应用层验证：TCP 通不代表 dufs 真的在服务（孤儿进程占端口等）。
+    // 单次 GET /，任何 HTTP 响应码（含 401/403）都证明服务活着；
+    // 失败重试一次，两次都失败才认定启动无效。
+    if (!await _waitHttpReady(port)) {
+      try {
+        _dufsFfi.stop();
+      } catch (_) {}
+      throw Exception(_t('srv.notResponding', {'port': '$port'}));
+    }
+  }
+
+  /// 单次 HTTP 探测：GET / 任意响应码都算存活（dufs 活着才能回 HTTP）。
+  /// 拿到响应头即成功，不读 body。超时/拒绝连接/异常返回 false。
+  /// 不引入长轮询——启动路径已用 [_waitPortReady] 保证端口可连，
+  /// 这里只补应用层确认（孤儿进程占端口、绑定成功但服务未就绪等）。
+  Future<bool> _waitHttpReady(int port) async {
+    for (var attempt = 0; attempt < 2; attempt++) {
+      final client = HttpClient();
+      try {
+        client.connectionTimeout = const Duration(milliseconds: 500);
+        final req = await client
+            .getUrl(Uri.parse('http://127.0.0.1:$port/'))
+            .timeout(const Duration(milliseconds: 500));
+        await req.close().timeout(const Duration(milliseconds: 500));
+        return true;
+      } catch (_) {
+        // 重试一次覆盖首个请求排队/慢启动窗口
+      } finally {
+        client.close();
+      }
+    }
+    return false;
   }
 
   /// 轮询本机端口直到可连接。返回 false 即超时（默认 3s）。
@@ -619,6 +651,14 @@ class DufsService extends ChangeNotifier {
       throw Exception(
         _t('srv.exitedDuringStart', {'code': '$_processExitCode'}),
       );
+    }
+    // 应用层验证（同 FFI 路径）：等端口可连 + HTTP 响应，避免
+    // 进程活着但没绑上端口（参数错/端口被抢）时 UI 仍显示在线。
+    if (!await _waitPortReady(port)) {
+      throw Exception(_t('srv.notListening', {'port': '$port'}));
+    }
+    if (!await _waitHttpReady(port)) {
+      throw Exception(_t('srv.notResponding', {'port': '$port'}));
     }
   }
 
