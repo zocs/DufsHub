@@ -821,19 +821,19 @@ class DufsService extends ChangeNotifier {
     if (_useFfi && _dufsFfi.isLoaded) {
       // FFI mode: stop the in-process server
       _dufsFfi.stop();
-      // Wait for the server to release the port (accept() may be blocking)
-      var released = false;
-      for (int i = 0; i < 20; i++) {
-        await Future.delayed(const Duration(milliseconds: 200));
-        if (!_dufsFfi.isRunning()) {
-          released = true;
-          break;
+      // dufs_stop is non-blocking (sets flag + shutdown_background), so
+      // isRunning() returns false immediately. Poll only if the flag
+      // somehow didn't take (accept() may still be blocking).
+      if (_dufsFfi.isRunning()) {
+        for (int i = 0; i < 20; i++) {
+          await Future.delayed(const Duration(milliseconds: 200));
+          if (!_dufsFfi.isRunning()) break;
         }
       }
-      // 已释放就不用再等；Windows 上端口常滞留 TIME_WAIT，额外等一段
-      if (!released || Platform.isWindows) {
-        await Future.delayed(const Duration(milliseconds: 800));
-      }
+      // Short settle for the port to be released by the background
+      // shutdown. _resolvePort on next start handles any leftover
+      // TIME_WAIT gracefully.
+      await Future.delayed(const Duration(milliseconds: 100));
     } else if (_process != null) {
       // Process mode (iOS): kill child process
       _process!.kill();
