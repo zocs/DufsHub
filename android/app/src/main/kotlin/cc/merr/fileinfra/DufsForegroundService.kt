@@ -302,9 +302,20 @@ class DufsForegroundService : Service() {
         // reply behind it.
         val gen: Int
         synchronized(startLock) {
-            if (isRunning && port == currentPort && path == currentPath) {
+            // Dedup only when the dufs child is ACTUALLY alive. isRunning is a
+            // stale flag: Dart may have killed an orphan dufs (port cleanup
+            // path) or the child may have died on its own, while isRunning
+            // stayed true. Matching on the flag alone then skips the restart,
+            // leaving the UI "running" with no live listener.
+            val childAlive = dufsProcess?.let { isAlive(it) } == true
+            if (isRunning && childAlive && port == currentPort && path == currentPath) {
                 Log.d(TAG, "Already running on port=$port, skip")
                 return START_REDELIVER_INTENT
+            }
+            if (isRunning && !childAlive) {
+                // Fall through to a clean restart: the killDufs() below
+                // resets the stale flag and drops the dead child handle.
+                Log.w(TAG, "Stale running flag (dufs dead), restarting")
             }
 
             startGeneration++
