@@ -1,0 +1,3 @@
+Improved Android 10/EMUI support: the server now starts even when the shared folder sits under scoped storage (a warning is shown instead of blocking)
+Improved Linux support: first-run setup no longer gets stuck on systems without a keyring; picking a folder without a desktop portal shows a clear hint
+Plus a code-review batch: trilingual notification buttons, safer clipboard endpoint limits, and more

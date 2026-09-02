@@ -3,7 +3,7 @@
 > 所有版本均可在 [GitHub Releases](https://github.com/zocs/fileinfra/releases) 下载。
 > All versions available at [GitHub Releases](https://github.com/zocs/fileinfra/releases).
 
-## [Unreleased]
+## [v0.5.8](https://github.com/zocs/fileinfra/releases/tag/v0.5.8) (2026-09-01)
 
 **中文：**
 - 🐛 Ubuntu 18.04 兼容版首屏卡死：无 keyring/secret-service 环境首次启动时 `save()` 不再被 secure storage 异常阻断（向导能正常走完）；无 XDG portal 时选择目录/文件给出明确提示。
