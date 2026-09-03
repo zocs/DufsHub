@@ -8,6 +8,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:desktop_drop/desktop_drop.dart';
+import 'package:path/path.dart' as p;
 import '../constants.dart';
 import '../l10n/app_localizations.dart';
 import '../models/server_config.dart';
@@ -247,27 +248,76 @@ class _HomePageState extends State<HomePage>
 
   Future<void> _pickDirectory() async {
     String? result;
+    var pickerFailed = false;
+    // Linux 上 file_picker 的 getDirectoryPath 走 XDG portal
+    // OpenFile + directory:true，部分 portal 后端忽略该选项，
+    // 弹出文件选择器而非目录选择器（按钮「打开」而非「选择」）。
+    // 优先用桌面环境原生工具（zenity/kdialog），file_picker 兜底。
+    if (Platform.isLinux) {
+      final (path, toolUsed) = await _pickDirLinuxNative();
+      // 工具已交互（选中或取消）即结束，不再回退 file_picker
+      if (toolUsed) {
+        if (path != null) {
+          await _applyDirPath(path);
+        }
+        return;
+      }
+      result = path;
+    }
+    // 非 Linux，或 Linux 无原生工具可用 → file_picker
     try {
-      result = await FilePicker.platform.getDirectoryPath();
+      result ??= await FilePicker.platform.getDirectoryPath();
     } catch (e) {
       // Linux 走 XDG portal（DBus org.freedesktop.portal.Desktop）；无桌面
       // /无 portal 服务（如 Ubuntu 18.04 离线环境）时抛异常而非返回 null。
-      // 静默失败会让用户以为按钮坏了，提示并引导用备用方案。
       debugPrint('pickDirectory failed: $e');
+      pickerFailed = true;
+    }
+    if (result != null) {
+      await _applyDirPath(result);
+      return;
+    }
+    // 用户取消（result==null）不是失败，静默；仅工具抛异常才提示。
+    if (pickerFailed) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.t('home.pickDirFailed'))),
       );
-      return;
     }
-    if (result != null) {
-      final path = result;
-      setState(() {
-        _config.path = path;
-        _config.shareSingleFile = false;
-      });
-      await _saveConfig();
+  }
+
+  Future<void> _applyDirPath(String path) async {
+    // 若 portal 返回文件路径而非目录（directory:true 被忽略），取父目录
+    final dir = await Directory(path).exists() ? path : p.dirname(path);
+    setState(() {
+      _config.path = dir;
+      _config.shareSingleFile = false;
+    });
+    await _saveConfig();
+  }
+
+  /// Linux 遍历式尝试原生目录选择器。
+  /// 返回 (路径, 工具是否已交互)：工具存在即已交互（取消时路径为
+  /// null，也视为已处理，不再回退 file_picker）；全部工具不可用才
+  /// 返回 (null, false) 由调用方走 file_picker。
+  Future<(String?, bool)> _pickDirLinuxNative() async {
+    final candidates = [
+      ['zenity', '--file-selection', '--directory', '--title=选择分享目录'],
+      ['kdialog', '--getexistingdirectory', '--title=选择分享目录'],
+    ];
+    for (final cmd in candidates) {
+      try {
+        final r = await Process.run(cmd[0], cmd.skip(1).toList());
+        final path = (r.stdout as String).trim();
+        return (
+          r.exitCode == 0 && path.isNotEmpty ? path : null,
+          true,
+        );
+      } catch (_) {
+        // 工具不存在/启动失败 → 尝试下一个
+      }
     }
+    return (null, false);
   }
 
   Future<void> _pickFile() async {
