@@ -1,6 +1,6 @@
 # FileInfra Roadmap
 
-## Current Status (2026-09-01)
+## Current Status (2026-09-02)
 
 ### v0.5.x Released
 - [x] **v0.5.1** (2026-08-22): full code review batch, Android quick-settings tile, notification enhancements
@@ -10,10 +10,11 @@
 - [x] **v0.5.5** (2026-08-30): notification shows full access address (follows default address switch, survives tile restarts), SV color panel blank/marker fix
 - [x] **v0.5.6** (2026-08-30): shared clipboard (port = dufs + 2000, default 7000), no-JS fallback page upload/mkdir/delete (dufs v0.46.0-fix5), browser-safe clipboard port
 - [x] **v0.5.7** (2026-08-31): Tools page (clipboard + QR generator two-tab, multi-row, style/color options, SVG download), offline `/qr?text=...` route, notification clipboard buttons (toggleable), `/api/clipboard` endpoint, Ubuntu 18.04 compat builds (`*-compat-linux-x86_64.*`)
+- [x] **v0.5.8** (2026-09-02): Ubuntu 18.04 compat blockers (keyring-less save + no-portal picker), Android 10 EMUI scoped-storage non-blocking startup (warning banner), v0.5.7 code-review batch (trilingual notif buttons, QR overflow 400, 1MB POST cap, WS binary guard, settings live-apply); docs alignment (ROADMAP/CHANGELOG/zh-CN fastlane backfill)
+- [x] **v0.5.9** (2026-09-02): fake-running fix after stop+quick-restart (Kotlin dedup validates child-process aliveness), desktop stop latency ~1s→~100ms, startup service verification (TCP + HTTP probes, UI flips instantly, background rollback on failure)
 
-### Post-v0.5.7 fixes on main (unreleased)
-- [x] **Ubuntu 18.04 compat blockers** (`c987d7d`): `ServerConfig.save()` no longer blocks first-run wizard when secure storage has no keyring (mirrors `load()`); FilePicker now try/catch + localized SnackBar when no XDG portal is available
-- [x] **Android 10 EMUI scoped-storage startup** (`35d66e6` + `3baf6a2`): readability probe is NON-BLOCKING on Android (warning banner instead of refusing to start); warning only surfaces after the server actually starts
+### Post-v0.5.9 (main)
+- （暂无未发版改动）
 
 ### Completed since last roadmap update
 - [x] CI cache & checksums.txt generation
@@ -28,7 +29,7 @@
 - [x] Shared clipboard + notification clipboard buttons + `/api/clipboard`
 
 ### Up next (next release)
-- [ ] v0.5.8: fold the two post-v0.5.7 fix batches into a release (code review findings + Linux/Android blockers); decide release date with user
+- [ ] Decide next version scope: remaining real-device retests (old tablet blank-page, Android 10 EMUI startup, Ubuntu 18.04 compat) + medium-term features
 - [ ] Old tablet blank-page real-device retest (Chromium < 80 WebView + `?noscript`)
 - [ ] Android 10 EMUI startup retest on device (pick internal public dir like Documents; warning should show but service starts)
 - [ ] Ubuntu 18.04 compat retest on device (wizard skip + picker SnackBar + service start)
@@ -63,4 +64,3 @@
 | `withValues(alpha:)` requires Flutter 3.27+ | Low | Current version OK |
 | NSIS `OutFile` order fragile | Low | Commented, don't touch without CI smoke |
 | Linux tray left-click no signal | Low | Design decision, documented in handoff #10 |
-| fastlane zh-CN changelogs incomplete (20-32, 46, 47 missing) | Low | Historical debt; backfill per release cadence |
