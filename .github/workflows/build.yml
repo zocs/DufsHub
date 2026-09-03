@@ -403,9 +403,21 @@ jobs:
       # checkout first: it cleans the workspace, so it must run before the
       # artifacts are downloaded. Needed for CHANGELOG.md + the release footer.
       - uses: actions/checkout@v7
+      # 只下载构建产物，显式排除 Docker Buildx 的 cache artifact
+      #（zocs~FileInfra~*.dockerbuild）：它是 cache 服务不可用时 buildx
+      # 上传的原始 gzip（非 zip 容器），download-artifact 解压必失败，
+      # 连续三个版本（v0.5.7/0.5.8/0.5.9）的 Release job 都因此挂掉。
       - uses: actions/download-artifact@v8
         with:
           path: artifacts
+          pattern: |
+            android
+            windows
+            ios
+            macos-arm64
+            linux-x64
+            linux-x64-compat
+            linux-arm64
       - name: List artifacts
         run: find artifacts -type f
       - name: Build release notes
