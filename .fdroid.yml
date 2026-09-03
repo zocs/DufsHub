@@ -43,7 +43,7 @@ Builds:
   - versionName: 0.5.9
     versionCode: 54
     # 发布后回填，见 fdroid 回填 commit
-    commit: 0000000000000000000000000000000000000000  # = tag v0.5.9 release commit
+    commit: ff9fabde4a50cb36b209ff6d72e505c168c51505  # = tag v0.5.9 release commit
     sudo:
       - apt-get update
       # cmake：dufs 默认开 `tls` feature → rustls 0.23 的 aws-lc-sys 会被编译，
