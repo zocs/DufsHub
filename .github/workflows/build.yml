@@ -407,17 +407,12 @@ jobs:
       #（zocs~FileInfra~*.dockerbuild）：它是 cache 服务不可用时 buildx
       # 上传的原始 gzip（非 zip 容器），download-artifact 解压必失败，
       # 连续三个版本（v0.5.7/0.5.8/0.5.9）的 Release job 都因此挂掉。
+      # pattern 用花括号展开精确枚举（v8 的 pattern 是单 glob，多行
+      # YAML 会被当成含换行的单字符串导致 0 匹配，2026-09-03 踩过）。
       - uses: actions/download-artifact@v8
         with:
           path: artifacts
-          pattern: |
-            android
-            windows
-            ios
-            macos-arm64
-            linux-x64
-            linux-x64-compat
-            linux-arm64
+          pattern: "{android,windows,ios,macos-arm64,linux-x64,linux-x64-compat,linux-arm64}"
       - name: List artifacts
         run: find artifacts -type f
       - name: Build release notes
