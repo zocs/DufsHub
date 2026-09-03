@@ -1,0 +1,2 @@
+Fixed Linux "pick directory" showing a file picker instead of a directory picker (portal compatibility issue on some desktop environments) — now prefers the system's native directory chooser
+Fixed CI auto-release: the release pipeline is fully automatic again, no manual workaround needed

@@ -3,6 +3,16 @@
 > 所有版本均可在 [GitHub Releases](https://github.com/zocs/fileinfra/releases) 下载。
 > All versions available at [GitHub Releases](https://github.com/zocs/fileinfra/releases).
 
+## [v0.5.10](https://github.com/zocs/fileinfra/releases/tag/v0.5.10) (2026-09-03)
+
+**中文：**
+- 🐛 修复 Linux 上「选择目录」弹出文件选择器的问题：file_picker 的 XDG portal 路径（`OpenFile` + `directory:true`）在部分后端被忽略，改为优先调用桌面环境原生目录选择器（zenity/kdialog），file_picker 兜底；若返回文件路径则自动取父目录。
+- 🔧 CI 修复：Release job 下载 artifacts 时排除 Docker Buildx 的 `*.dockerbuild` cache 产物（非 zip 容器，下载解压必失败）——v0.5.7/0.5.8/0.5.9 连续三版因此无法自动发布、需手动绕道，本次起恢复全自动。
+
+**English:**
+- 🐛 Fixed Linux "pick directory" showing a file picker: file_picker's XDG portal path (`OpenFile` + `directory:true`) is ignored by some backends; now tries native desktop directory choosers (zenity/kdialog) first, file_picker as fallback, and falls back to the parent dir if a file path was returned.
+- 🔧 CI fix: the Release job now excludes Docker Buildx's `*.dockerbuild` cache artifacts from the download (raw gzip, not a zip container — extraction always failed). v0.5.7/0.5.8/0.5.9 releases had to be published manually for that reason; automatic publishing is restored.
+
 ## [v0.5.9](https://github.com/zocs/fileinfra/releases/tag/v0.5.9) (2026-09-02)
 
 **中文：**
